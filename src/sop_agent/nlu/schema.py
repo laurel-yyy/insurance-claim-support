@@ -56,6 +56,22 @@ class Confirmation(StrEnum):
     UNCLEAR = "unclear"
 
 
+class QuestionKind(StrEnum):
+    """Whether answering needs record data. A language judgment, so the Extractor labels it (§9.1.2)."""
+
+    ACCOUNT = "account"
+    GENERAL = "general"
+    PROCESS = "process"
+    OUT_OF_SCOPE = "out_of_scope"
+
+
+class Question(BaseModel):
+    """One question the caller asked. `kind` None means the label is missing: treated as ACCOUNT."""
+
+    text: str
+    kind: QuestionKind | None = None
+
+
 class FieldMention(BaseModel):
     """A raw identity value as extracted, before code normalization."""
 
@@ -86,7 +102,7 @@ class NLUResult(BaseModel):
     description_keywords: list[str] = Field(default_factory=list)
     intents: list[IntentScore] = Field(default_factory=list)
     followup_topics: list[str] = Field(default_factory=list)
-    questions: list[str] = Field(default_factory=list)
+    questions: list[Question] = Field(default_factory=list)
     unavailable_documents: list[str] = Field(default_factory=list)
     no_substitutes_available: bool = False
     scope: Scope = Scope.IN_SCOPE

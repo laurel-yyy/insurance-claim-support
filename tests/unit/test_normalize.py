@@ -130,9 +130,14 @@ def test_v7_id_last4_with_wrong_length_is_invalid(raw: str) -> None:
     assert normalize_id_last4(raw) is None
 
 
-def test_policy_number_is_uppercased_and_trimmed() -> None:
-    assert normalize_policy_number(" pol-9921 ") == "POL-9921"
-    assert normalize_policy_number("   ") is None
+@pytest.mark.parametrize("raw", [" pol-9921 ", "POL-9921", "pol 9921", "POL9921", "pol_9921", "P.O.L. 9921"])
+def test_v5_policy_number_keeps_only_letters_and_digits(raw: str) -> None:
+    assert normalize_policy_number(raw) == "POL9921"
+
+
+@pytest.mark.parametrize("raw", ["", "   ", "--"])
+def test_v7_empty_policy_number_is_invalid(raw: str) -> None:
+    assert normalize_policy_number(raw) is None
 
 
 @pytest.mark.parametrize(

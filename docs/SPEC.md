@@ -439,7 +439,7 @@ The repository has no write methods. All side effects (authorization requests, e
 | Extra record | Purpose |
 |---|---|
 | P90: a second "Margaret Chen" with a different DOB, phone, email, and ID number, policy POL-5530 | Same name, different person; prevents cross-record mixing |
-| P91: two denied healthcare claims from January 2026 (CL-9101 missing an X-ray, CL-9102 missing a referral) | Genuine ambiguity; tests CHOOSE_CLAIM and ClaimSelector |
+| P91: two denied healthcare claims from January 2026 (CL-9101 missing X-ray images and the treating provider office note, CL-9102 missing a referral letter) | Genuine ambiguity; tests CHOOSE_CLAIM and ClaimSelector. The two claims get different guidance bundles (CL-9101's office note hits K1's exact-match branch; CL-9102 falls back to the general guidance), so building guidance for the wrong candidate fails a test |
 | P92: a claim with `status="under_review"` and `case_type="pet"` | Tolerant parsing |
 | A representative for P91 with `relationship="spouse"` | Relationship synonyms ("my husband" → spouse) |
 | Consent scenario `declined` = pending → declined | The consent-declined branch |
@@ -635,14 +635,14 @@ When the policyholder calls, passing identity produces `VERIFIED` right away. Wh
 | `phone` | Keep digits only; drop a leading 1 from an 11-digit number (`+16505212836` → `6505212836`) | Exactly 10 digits | Equals the primary value or any `phone_aliases` entry after normalization |
 | `email` | Trim, casefold | Basic format check | Equals the primary value or any `email_aliases` entry |
 | `id_last4` | Keep digits only | Exactly 4 digits | Equals `id_last4` (SSN and national ID are treated the same) |
-| `policy_number` | Uppercase, trim | Non-empty | Used only to narrow the candidates; **never counts toward the match total** |
+| `policy_number` | Uppercase; keep letters and digits only (`pol 9921` and `POL-9921` both become `POL9921`); applied to both the caller's value and the record before lookup | Non-empty | Used only to narrow the candidates; **never counts toward the match total** |
 
 Code always re-normalizes and re-validates values supplied by the LLM; it never trusts the LLM's formatting.
 
 #### 8.1.2 Verification rules
 
 - **V1 Counting rule**: Use the latest valid value of each field in the session. Identity verification passes when there is **exactly one** policyholder record whose number of matches with the provided fields is ≥ `VERIFY_MIN_MATCHES` (default 3). All matches must come from the same record; P9's name plus P12's DOB don't add up.
-- **V2 Evaluation timing (anti-probing)**: Evaluate only when both conditions hold: "at least 3 valid fields have been provided" and "this turn brought new or corrected identity information." Detect new information by comparing a signature of the field values (a hash of the sorted `field=value` pairs) with the signature from the last evaluation. With fewer than 3 fields, the reply is the same whether or not the values are correct ("I need N more"), so no partial-match result is ever revealed.
+- **V2 Evaluation timing (anti-probing)**: Evaluate only when both conditions hold: "at least 3 valid fields have been provided" and "this turn brought new or corrected identity information." Detect new information by comparing a signature of the inputs to `evaluate_identity` with the signature from the last evaluation. The signature covers the valid PII values (a hash of the sorted `field=value` pairs) plus the normalized policy number, because V5 uses the policy number to choose the candidate set. So correcting only the policy number triggers a re-evaluation, restating the same number in another format doesn't, and a failure caused by changing only the policy number counts as a failed attempt like any other. With fewer than 3 fields, the reply is the same whether or not the values are correct ("I need N more"), so no partial-match result is ever revealed.
 - **V3 Failure handling**: A failed evaluation → `failed_attempts += 1`. The reply uses generic wording: it doesn't say which field was wrong and doesn't confirm whether the policy exists. It asks the caller to double-check or provide another field. Provided values are kept, and the caller may correct any one of them (the new value replaces the old one).
 - **V4 Lockout**: `failed_attempts >= VERIFY_MAX_FAILED_ATTEMPTS` (default 3) → event `VERIFICATION_LOCKED` → transition to ESCALATED. No further verification is accepted in this session.
 - **V5 Candidate set**: If a policy_number was provided and it exists → match only among the policyholders who hold that policy. If it doesn't exist → ignore it and match across all policyholders. Never tell the caller whether a policy number exists.
@@ -1013,7 +1013,7 @@ class SessionState(BaseModel):
 | policy_number, case_id | Replace |
 | Case hints | Non-empty values replace; `keywords` and `raw_mentions` are appended and deduplicated; writing produces `HINT_STORED` |
 | Intents | Merge by path, keep the highest confidence, and record the turn of the latest mention |
-| Questions | If the current phase can't answer them (verification or a selected claim is needed) → add to `deferred_questions` and produce `QUESTION_DEFERRED` |
+| Questions | Each question carries a `kind` from the Extractor. `account` (needs record data): if verification isn't complete, or no claim is selected yet in RESOLVE_INTENT → add to `deferred_questions` and produce `QUESTION_DEFERRED`; deferred questions are delivered through `answer_now` when PROCESS_CASE starts (§8.2.7). `general` and `process` are never deferred; the policy puts them in `answer_now` in any phase (process answers come from the reasons library). `out_of_scope` is declined per §9.2. A missing kind is treated as `account` |
 | Declined fields | Append; if the caller later volunteers the field → remove it from the declined set |
 | Representative info | Non-empty values replace; once `caller_role` is set to representative, it's never downgraded within the session. When the role becomes representative and the recorded `full_name` equals `representative_name`, remove it from the identity fields (it's the representative's own name, not the policyholder's) |
 | unavailable_documents | Append |
@@ -1195,6 +1195,18 @@ class IntentScore(BaseModel):
     confidence: float
 
 
+class QuestionKind(StrEnum):
+    ACCOUNT = "account"  # Needs verified record data
+    GENERAL = "general"  # Insurance knowledge (GENERAL_KB)
+    PROCESS = "process"  # About this call or the SOP ("why do you need my SSN?")
+    OUT_OF_SCOPE = "out_of_scope"
+
+
+class QuestionWire(BaseModel):  # Both fields required
+    text: str
+    kind: QuestionKind
+
+
 class NLUWire(BaseModel):  # Every field required; "" / 0 / "none" / [] / false mean not mentioned
     dialog_acts: list[DialogAct]
     full_name: str
@@ -1217,7 +1229,7 @@ class NLUWire(BaseModel):  # Every field required; "" / 0 / "none" / [] / false 
     description_keywords: list[str]
     intents: list[IntentScore]
     followup_topics: list[FollowupTopicName]  # Enum generated at startup from the guidance file (K7)
-    questions: list[str]
+    questions: list[QuestionWire]
     unavailable_documents: list[str]
     no_substitutes_available: bool
     scope: Scope  # in_scope | out_of_scope | mixed
@@ -1273,7 +1285,9 @@ Rules
    description_keywords are short nouns such as "pathology report".
 8. intents: candidate needs with confidence 0-1. An appeal request is next_steps.
 9. followup_topics: which FOLLOWUP_TOPICS the message asks about.
-10. questions: each question the caller asked, as a short paraphrase.
+10. questions: each question the caller asked, as {text, kind}. text is a short paraphrase. kind is account
+    (needs this caller's own claim or policy records), general (general insurance knowledge), process (about this
+    call or the verification and consent steps), or out_of_scope. Split a mixed message into separate questions.
 11. unavailable_documents: documents the caller says they don't have or can't get.
     no_substitutes_available: true only if they also can't get any replacement or substitute.
 12. scope: in_scope = the caller's insurance, claims, policy, documents, billing, this call, or general insurance
@@ -1298,7 +1312,7 @@ claim from January. DOB is 1985-03-15, SSN last four is 4472."
 
 Message: "I already told you who I am. This is ridiculous. Just tell me why my claim was denied."
 {"dialog_acts":["complain","ask_question"],"claim_status":"denied",
- "intents":[{"path":"denial_question","confidence":0.8}],"questions":["why was my claim denied"],
+ "intents":[{"path":"denial_question","confidence":0.8}],"questions":[{"text":"why was my claim denied","kind":"account"}],
  "scope":"in_scope","emotion":"frustrated","emotion_intensity":2,"confirmation":"none"}
 
 Message: "Hi, this is David Chen. I'm calling for my mom, Margaret Chen. Her birthday is March 15, 1985 and her
@@ -1310,14 +1324,15 @@ phone is 650-521-2836."
 
 Message: "I'd rather not give my SSN. Can I use my email instead? It's margaret@email.com"
 {"dialog_acts":["refuse","provide_identity","ask_question"],"email":"margaret@email.com",
- "declined_fields":["id_last4"],"questions":["can I use my email instead of my SSN"],"scope":"in_scope",
+ "declined_fields":["id_last4"],"questions":[{"text":"can I use my email instead of my SSN","kind":"process"}],"scope":"in_scope",
  "emotion":"neutral","emotion_intensity":1,"confirmation":"none"}
 
 Message: "How do I send the office note? And what if I can't get the original pathology report?"
 {"dialog_acts":["ask_question"],"description_keywords":["office note","pathology report"],
  "intents":[{"path":"document_submission","confidence":0.9}],
  "followup_topics":["submission_method","missing_required_material_alternatives"],
- "questions":["how to send the office note","what if I can't get the original pathology report"],
+ "questions":[{"text":"how to send the office note","kind":"account"},
+              {"text":"what if I can't get the original pathology report","kind":"account"}],
  "unavailable_documents":["pathology report"],"scope":"in_scope","emotion":"anxious","emotion_intensity":1,
  "confirmation":"none"}
 
@@ -1326,8 +1341,14 @@ Message: "Sure, but send it to my work email mchen@work.com"
 {"dialog_acts":["confirm"],"summary_email":"mchen@work.com","scope":"in_scope","emotion":"neutral",
  "emotion_intensity":0,"confirmation":"yes"}
 
+Message: "What's an EOB, and why was my claim denied?"
+{"dialog_acts":["ask_question"],"claim_status":"denied",
+ "intents":[{"path":"general_insurance_question","confidence":0.6},{"path":"denial_question","confidence":0.8}],
+ "questions":[{"text":"what is an EOB","kind":"general"},{"text":"why was my claim denied","kind":"account"}],
+ "scope":"in_scope","emotion":"neutral","emotion_intensity":0,"confirmation":"none"}
+
 Message: "What is RL?"
-{"dialog_acts":["off_topic","ask_question"],"questions":["what is RL"],"scope":"out_of_scope",
+{"dialog_acts":["off_topic","ask_question"],"questions":[{"text":"what is RL","kind":"out_of_scope"}],"scope":"out_of_scope",
  "off_topic_subject":"reinforcement learning","emotion":"neutral","emotion_intensity":0,"confirmation":"none"}
 ```
 

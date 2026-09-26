@@ -120,8 +120,11 @@ def normalize_id_last4(raw: str) -> str | None:
 
 
 def normalize_policy_number(raw: str) -> str | None:
-    """Uppercased, whitespace removed. Used only to narrow candidates, never counted as a match (V5)."""
-    text = re.sub(r"\s+", "", unicodedata.normalize("NFKC", raw)).upper()
+    """Uppercased letters and digits only, so "pol 9921" and "POL-9921" agree (V2 signature, V5 lookup).
+
+    Applied to both the caller's value and the record. Never counted as a match.
+    """
+    text = "".join(ch for ch in unicodedata.normalize("NFKC", raw) if ch.isalnum()).upper()
     return text or None
 
 

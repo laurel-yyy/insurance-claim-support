@@ -1,3 +1,5 @@
+import pytest
+
 from sop_agent.domain.dates import DateHint
 from sop_agent.domain.enums import (
     CallerRole,
@@ -9,8 +11,8 @@ from sop_agent.domain.enums import (
     Phase,
 )
 from sop_agent.memory.merge import describe_hints, merge
-from sop_agent.memory.state import EMOTION_HISTORY_LIMIT
-from sop_agent.nlu.schema import IntentScore
+from sop_agent.memory.state import EMOTION_HISTORY_LIMIT, SessionState
+from sop_agent.nlu.schema import IntentScore, Question, QuestionKind
 from sop_agent.sop.directive import Event, EventType
 from tests.builders import new_state, nlu
 
@@ -55,7 +57,13 @@ def test_events_never_carry_raw_identity_values() -> None:
 def test_policy_number_is_normalized_and_replaced() -> None:
     state, _ = merge(new_state(), nlu(policy_number="pol-9921"), turn=1)
     state, _ = merge(state, nlu(policy_number="POL-1044"), turn=2)
-    assert state.memory.identity.policy_number == "POL-1044"
+    assert state.memory.identity.policy_number == "POL1044"
+
+
+def test_v2_reformatted_policy_number_through_merge_keeps_the_signature() -> None:
+    state, _ = merge(new_state(), nlu({F.FULL_NAME: "Margaret Chen"}, policy_number="POL-9921"), turn=1)
+    restated, _ = merge(state, nlu(policy_number="pol 9921"), turn=2)
+    assert restated.memory.identity.signature() == state.memory.identity.signature()
 
 
 def test_v8_declined_field_is_recorded_once() -> None:
@@ -129,11 +137,21 @@ def test_intents_keep_highest_confidence_and_latest_turn() -> None:
     assert (candidate.confidence, candidate.last_turn) == (0.8, 3)
 
 
-def test_claim_question_before_verification_is_deferred() -> None:
-    message = nlu(
-        questions=["why was my claim denied"],
-        intents=[IntentScore(path=Path.DENIAL_QUESTION, confidence=0.8)],
-    )
+def _q(text: str, kind: QuestionKind | None) -> Question:
+    return Question(text=text, kind=kind)
+
+
+def _verified(phase: Phase) -> SessionState:
+    state = new_state(phase)
+    state.memory.identity.status = IdentityStatus.VERIFIED
+    return state
+
+
+DENIAL = IntentScore(path=Path.DENIAL_QUESTION, confidence=0.8)
+
+
+def test_account_question_before_verification_is_deferred_once() -> None:
+    message = nlu(questions=[_q("why was my claim denied", QuestionKind.ACCOUNT)], intents=[DENIAL])
     state, events = merge(new_state(), message, turn=2)
     [deferred] = state.memory.deferred_questions
     assert (deferred.text, deferred.path, deferred.answered) == (
@@ -142,37 +160,66 @@ def test_claim_question_before_verification_is_deferred() -> None:
         False,
     )
     assert _types(events) == [EventType.QUESTION_DEFERRED]
+    assert events[0].data == {"path": "denial_question"}
     again, _ = merge(state, message, turn=3)
     assert len(again.memory.deferred_questions) == 1
 
 
-def test_general_question_is_not_deferred() -> None:
+def test_mixed_turn_defers_only_the_account_question() -> None:
     message = nlu(
-        questions=["what is an EOB"],
-        intents=[IntentScore(path=Path.GENERAL_INSURANCE_QUESTION, confidence=0.9)],
+        questions=[
+            _q("what is an EOB", QuestionKind.GENERAL),
+            _q("why was my claim denied", QuestionKind.ACCOUNT),
+        ],
+        intents=[IntentScore(path=Path.GENERAL_INSURANCE_QUESTION, confidence=0.6), DENIAL],
     )
     state, _ = merge(new_state(), message, turn=1)
-    assert state.memory.deferred_questions == []
+    assert [q.text for q in state.memory.deferred_questions] == ["why was my claim denied"]
 
 
-def test_low_confidence_claim_intent_does_not_defer() -> None:
-    message = nlu(questions=["hmm"], intents=[IntentScore(path=Path.STATUS_INQUIRY, confidence=0.3)])
-    state, _ = merge(new_state(), message, turn=1)
-    assert state.memory.deferred_questions == []
+@pytest.mark.parametrize("kind", [QuestionKind.GENERAL, QuestionKind.PROCESS, QuestionKind.OUT_OF_SCOPE])
+def test_non_account_questions_are_never_deferred(kind: QuestionKind) -> None:
+    for state in (new_state(), _verified(Phase.RESOLVE_INTENT)):
+        merged, events = merge(state, nlu(questions=[_q("some question", kind)], intents=[DENIAL]), turn=1)
+        assert merged.memory.deferred_questions == []
+        assert events == []
 
 
-def test_claim_question_in_process_case_is_not_deferred() -> None:
-    state = new_state(Phase.PROCESS_CASE)
-    state.memory.selected_case_id = "CL-X"
-    message = nlu(questions=["why denied"], intents=[IntentScore(path=Path.DENIAL_QUESTION, confidence=0.9)])
-    merged, _ = merge(state, message, turn=5)
-    assert merged.memory.deferred_questions == []
+def test_missing_kind_is_treated_as_account_before_verification() -> None:
+    state, _ = merge(new_state(), nlu(questions=[_q("where is it", None)]), turn=1)
+    assert [q.text for q in state.memory.deferred_questions] == ["where is it"]
 
 
-def test_claim_question_in_resolve_intent_without_selection_is_deferred() -> None:
-    message = nlu(questions=["where is it"], intents=[IntentScore(path=Path.STATUS_INQUIRY, confidence=0.9)])
-    merged, _ = merge(new_state(Phase.RESOLVE_INTENT), message, turn=5)
+def test_deferred_question_without_confident_claim_intent_has_no_path() -> None:
+    message = nlu(
+        questions=[_q("what happened with it", QuestionKind.ACCOUNT)],
+        intents=[IntentScore(path=Path.STATUS_INQUIRY, confidence=0.3)],
+    )
+    state, events = merge(new_state(), message, turn=1)
+    [deferred] = state.memory.deferred_questions
+    assert deferred.path is None
+    assert events[0].data == {"path": None}
+
+
+def test_account_question_is_deferred_until_verification_completes_for_a_representative() -> None:
+    state = new_state()
+    state.memory.identity.status = IdentityStatus.IDENTITY_VERIFIED  # consent still pending
+    merged, _ = merge(state, nlu(questions=[_q("why denied", QuestionKind.ACCOUNT)]), turn=4)
+    assert [q.text for q in merged.memory.deferred_questions] == ["why denied"]
+
+
+def test_account_question_in_resolve_intent_without_selection_is_deferred() -> None:
+    message = nlu(questions=[_q("where is it", QuestionKind.ACCOUNT)], intents=[DENIAL])
+    merged, _ = merge(_verified(Phase.RESOLVE_INTENT), message, turn=5)
     assert [q.text for q in merged.memory.deferred_questions] == ["where is it"]
+
+
+def test_account_question_with_a_selected_claim_is_not_deferred() -> None:
+    for phase in (Phase.RESOLVE_INTENT, Phase.PROCESS_CASE):
+        state = _verified(phase)
+        state.memory.selected_case_id = "CL-X"
+        merged, _ = merge(state, nlu(questions=[_q("why denied", QuestionKind.ACCOUNT)]), turn=5)
+        assert merged.memory.deferred_questions == []
 
 
 def test_a1_caller_role_is_never_downgraded() -> None:

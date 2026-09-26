@@ -1,5 +1,7 @@
 from datetime import date
 
+import pytest
+
 from sop_agent.data.repository import ClaimsRepository, InMemoryRepository
 from sop_agent.domain.enums import CallerRole, IdentityField, IdentityStatus, VerifiedAs
 from sop_agent.domain.models import Policyholder
@@ -282,3 +284,62 @@ def test_input_identity_state_is_never_mutated(snapshot_repo: InMemoryRepository
     before = state.model_dump()
     _check(state, snapshot_repo)
     assert state.model_dump() == before
+
+
+# --- V2/V5: the policy number is an input to evaluate_identity (DECISIONS D15) -------------------------
+
+
+def _p9_fields_with_policy(policy_number: str) -> IdentityState:
+    return identity(
+        policy_number=policy_number, full_name=P9["full_name"], dob=P9["dob"], id_last4=P9["id_last4"]
+    )
+
+
+def _with_policy(state: IdentityState, policy_number: str) -> IdentityState:
+    return state.model_copy(update={"policy_number": policy_number}, deep=True)
+
+
+def test_v2_correcting_only_the_policy_number_after_a_failure_passes(
+    snapshot_repo: InMemoryRepository,
+) -> None:
+    failed = _check(_p9_fields_with_policy("POL-8836"), snapshot_repo)
+    assert isinstance(failed.outcome, Failed)
+    corrected = _check(_with_policy(failed.identity, "POL-9921"), snapshot_repo)
+    assert isinstance(corrected.outcome, Verified)
+    assert corrected.identity.party_id == "P9"
+    assert corrected.identity.failed_attempts == 1
+
+
+def test_v4_switching_to_other_holders_policy_numbers_fails_and_locks(
+    snapshot_repo: InMemoryRepository,
+) -> None:
+    state = _p9_fields_with_policy("POL-8836")
+    for attempt, other in enumerate(("POL-8836", "POL-1044", "POL-7742"), start=1):
+        check = _check(_with_policy(state, other), snapshot_repo)
+        assert isinstance(check.outcome, Failed)
+        assert check.identity.failed_attempts == attempt
+        state = check.identity
+    assert state.status is IdentityStatus.LOCKED
+    assert _event_types(check) == [EventType.VERIFICATION_FAILED, EventType.VERIFICATION_LOCKED]
+
+
+@pytest.mark.parametrize("restated", ["pol 8836", "POL8836", " pol-8836 "])
+def test_v2_restating_the_same_policy_number_in_another_format_does_not_reevaluate(
+    snapshot_repo: InMemoryRepository, restated: str
+) -> None:
+    failed = _check(_p9_fields_with_policy("POL-8836"), snapshot_repo).identity
+    restated_state = _with_policy(failed, restated)
+    assert restated_state.signature() == failed.signature()
+    assert not should_evaluate(restated_state, CFG)
+    again = _check(restated_state, snapshot_repo)
+    assert again.outcome is None
+    assert again.identity.failed_attempts == 1
+
+
+def test_v5_reformatted_policy_number_still_narrows_candidates(merged_repo: InMemoryRepository) -> None:
+    state = identity(
+        policy_number="pol 5530", full_name="margaret chen", dob=P90["dob"], id_last4=P90["id_last4"]
+    )
+    outcome = evaluate_identity(state, merged_repo, CFG)
+    assert isinstance(outcome, Verified)
+    assert outcome.party_id == "P90"

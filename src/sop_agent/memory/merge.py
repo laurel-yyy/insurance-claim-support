@@ -11,6 +11,7 @@ from sop_agent.domain.enums import (
     CallerRole,
     IdentityField,
     IdentityStatus,
+    Path,
     Phase,
 )
 from sop_agent.domain.normalize import normalize_identity_field, normalize_name, normalize_policy_number
@@ -23,10 +24,10 @@ from sop_agent.memory.state import (
     Memory,
     SessionState,
 )
-from sop_agent.nlu.schema import NLUResult
+from sop_agent.nlu.schema import NLUResult, QuestionKind
 from sop_agent.sop.directive import Event, EventType
 
-DEFER_INTENT_MIN_CONFIDENCE = 0.5
+PATH_HINT_MIN_CONFIDENCE = 0.5
 
 _MONTH_NAMES = (
     "January", "February", "March", "April", "May", "June",
@@ -177,26 +178,34 @@ def _merge_intents(memory: Memory, nlu: NLUResult, turn: int) -> None:
 
 
 def _merge_questions(state: SessionState, nlu: NLUResult, turn: int, events: _Events) -> None:
-    """Defer account questions the current phase can't answer yet (§8.2.7; rule in DECISIONS)."""
-    if not nlu.questions or not _needs_deferral(state):
+    """Defer account questions until they can be answered (§9.1.2, §8.2.7).
+
+    Only ACCOUNT questions (or ones with a missing label) are deferred. GENERAL, PROCESS and OUT_OF_SCOPE
+    questions are left for the policy to answer or decline this turn, in any phase.
+    """
+    if not _account_questions_must_wait(state):
         return
-    claim_intents = [
-        i
-        for i in nlu.intents
-        if i.path in PATHS_NEEDING_CLAIM and i.confidence >= DEFER_INTENT_MIN_CONFIDENCE
-    ]
-    if not claim_intents:
-        return
-    path = max(claim_intents, key=lambda i: i.confidence).path
+    path = _likely_claim_path(nlu)
     known = {q.text.casefold() for q in state.memory.deferred_questions}
-    for text in (q.strip() for q in nlu.questions):
-        if text and text.casefold() not in known:
-            state.memory.deferred_questions.append(DeferredQuestion(text=text, turn=turn, path=path))
-            known.add(text.casefold())
-            events.add(EventType.QUESTION_DEFERRED, path=path.value)
+    for question in nlu.questions:
+        text = question.text.strip()
+        if question.kind not in (QuestionKind.ACCOUNT, None) or not text or text.casefold() in known:
+            continue
+        state.memory.deferred_questions.append(DeferredQuestion(text=text, turn=turn, path=path))
+        known.add(text.casefold())
+        events.add(EventType.QUESTION_DEFERRED, path=path.value if path else None)
 
 
-def _needs_deferral(state: SessionState) -> bool:
-    if state.phase is Phase.VERIFY_ID:
+def _account_questions_must_wait(state: SessionState) -> bool:
+    """Record data needs completed verification, and claim answers need a selected claim."""
+    if state.memory.identity.status is not IdentityStatus.VERIFIED:
         return True
     return state.phase is Phase.RESOLVE_INTENT and state.memory.selected_case_id is None
+
+
+def _likely_claim_path(nlu: NLUResult) -> Path | None:
+    """Best claim-related intent in the same message, used later to route the deferred question."""
+    claim_intents = [
+        i for i in nlu.intents if i.path in PATHS_NEEDING_CLAIM and i.confidence >= PATH_HINT_MIN_CONFIDENCE
+    ]
+    return max(claim_intents, key=lambda i: i.confidence).path if claim_intents else None

@@ -8,7 +8,8 @@
     "summary": "Healthcare claim denied because the X-ray images are missing",
     "denial_reason": "the review file did not include the X-ray images from the imaging center",
     "documents_needed": [
-      "x-ray images"
+      "x-ray images",
+      "treating provider office note"
     ],
     "appeal_deadline": "2026-03-25",
     "expected_reimbursement_amount": "0.00",

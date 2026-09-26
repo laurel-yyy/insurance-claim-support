@@ -25,6 +25,7 @@ from sop_agent.domain.enums import (
     VerifiedAs,
     VerifyStage,
 )
+from sop_agent.domain.normalize import normalize_policy_number
 from sop_agent.nlu.schema import ValueSource
 from sop_agent.sop.directive import ActionKind, Event, PendingQuestion
 
@@ -61,9 +62,13 @@ class IdentityState(BaseModel):
         return {name: fv.value for name, fv in self.values.items()}
 
     def signature(self) -> str:
-        """Hash of sorted field=value pairs plus the policy number; detects new information (V2)."""
+        """Hash of every input to evaluate_identity: valid PII values plus the normalized policy number (V2).
+
+        The policy number is included because V5 uses it to choose the candidate set.
+        """
         pairs = sorted(f"{name.value}={value}" for name, value in self.valid_values().items())
-        pairs.append(f"policy_number={self.policy_number or ''}")
+        policy = normalize_policy_number(self.policy_number) if self.policy_number else None
+        pairs.append(f"policy_number={policy or ''}")
         return hashlib.sha256("\n".join(pairs).encode("utf-8")).hexdigest()
 
 

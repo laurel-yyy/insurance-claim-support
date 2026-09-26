@@ -11,6 +11,13 @@ def test_policyholders_by_policy_is_case_insensitive(snapshot_repo: InMemoryRepo
     first = snapshot_repo.policyholders()[0]
     assert snapshot_repo.policyholders_by_policy(first.policy_number.lower()) == (first,)
     assert snapshot_repo.policyholders_by_policy("POL-0000000") == ()
+    assert snapshot_repo.policyholders_by_policy("--") == ()
+
+
+def test_v5_policy_lookup_ignores_formatting_on_both_sides(snapshot_repo: InMemoryRepository) -> None:
+    first = snapshot_repo.policyholders()[0]
+    digits = "".join(ch for ch in first.policy_number if ch.isdigit())
+    assert snapshot_repo.policyholders_by_policy(f"pol {digits}") == (first,)
 
 
 def test_claims_for_returns_only_that_partys_claims(snapshot_repo: InMemoryRepository) -> None:
@@ -69,6 +76,15 @@ def test_merged_repository_has_ambiguous_january_denials(merged_repo: InMemoryRe
     assert {(c.case_type, c.status.value, c.created_at.year, c.created_at.month) for c in claims} == {
         ("healthcare", "denied", 2026, 1)
     }
+
+
+def test_ambiguous_january_denials_need_different_documents(merged_repo: InMemoryRepository) -> None:
+    """Different bundles per candidate, so guidance built for the wrong claim can't pass unnoticed."""
+    first, second = merged_repo.claims_for("P91")
+    assert set(first.documents_needed) != set(second.documents_needed)
+    guidance_keys = set(merged_repo.document_guideline().document_guidance)
+    exact = [c.case_id for c in (first, second) if guidance_keys & {d.casefold() for d in c.documents_needed}]
+    assert exact == ["CL-9101"], "one candidate must reach K1's exact-match branch"
 
 
 def test_repository_returns_immutable_sequences(snapshot_repo: InMemoryRepository) -> None:

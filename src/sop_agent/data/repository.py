@@ -15,6 +15,7 @@ from sop_agent.domain.models import (
     FieldInfo,
     Policyholder,
 )
+from sop_agent.domain.normalize import normalize_policy_number
 
 
 class ClaimsRepository(Protocol):
@@ -59,8 +60,11 @@ class InMemoryRepository:
         return self._by_party.get(party_id)
 
     def policyholders_by_policy(self, policy_number: str) -> Sequence[Policyholder]:
-        wanted = policy_number.strip().upper()
-        return tuple(p for p in self._policyholders if p.policy_number.strip().upper() == wanted)
+        """Compare normalized forms on both sides so formatting never changes the V5 candidate set."""
+        wanted = normalize_policy_number(policy_number)
+        if wanted is None:
+            return ()
+        return tuple(p for p in self._policyholders if normalize_policy_number(p.policy_number) == wanted)
 
     def claims_for(self, party_id: str) -> Sequence[Claim]:
         return tuple(c for c in self._claims if c.party_id == party_id)

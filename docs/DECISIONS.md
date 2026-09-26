@@ -91,20 +91,25 @@ Each entry: context, decision, consequence.
   and never enters events.
 - **Consequence**: The M2 handler just appends the events and decides the transition.
 
-## D15. The anti-probing signature includes the policy number
-- **Context**: V2 compares "a hash of the sorted field=value pairs"; the spec doesn't say whether the policy number
-  is part of it.
-- **Decision**: It is. A new policy number changes the candidate set (V5), so it counts as new information.
-- **Consequence**: A caller can trigger one re-evaluation by changing only the policy number; each one still
-  counts toward the lockout if it fails.
+## D15. The anti-probing signature covers every input to `evaluate_identity`
+- **Context**: V2 compares "a hash of the sorted field=value pairs"; the spec didn't say whether the policy number
+  is part of it. Reviewed and confirmed.
+- **Decision**: The rule is "re-evaluate when the inputs to `evaluate_identity` change". The signature covers the
+  valid PII values plus the policy number, because V5 uses it to choose the candidate set. The policy number is
+  normalized to letters and digits only (`pol 9921` = `POL-9921` = `POL9921`), with the same function on both
+  the caller's value and the record, for both the signature and the V5 lookup. A failure caused by changing only
+  the policy number costs an attempt like any other. SPEC §8.1.1 and V2 are updated to say this.
+- **Consequence**: A caller who mistyped only the policy number can correct it and pass. Cycling policy numbers
+  only burns attempts, and the number never counts toward the 3 matches, so there is no probing gain. Restating
+  the same number in another format neither re-evaluates nor misses the lookup.
 
-## D16. When a question is deferred (spec is silent)
-- **Context**: §9.1.2 defers questions "the current phase can't answer" but NLU questions carry no category.
-- **Decision**: Questions are deferred when the phase is VERIFY_ID, or RESOLVE_INTENT with no selected claim, and
-  the same message has an intent for a path that needs a claim (confidence ≥ 0.5). General questions are never
-  deferred. Duplicates (case-insensitive) are dropped.
-- **Consequence**: "Why was it denied?" before verification is answered right after; "what is an EOB?" is answered
-  immediately from general knowledge.
+## D16. When a question is deferred — superseded by D21
+- **Context**: The first M1 version deferred every question in a turn that carried a confident claim-related
+  intent.
+- **Decision**: Replaced by per-question labels (D21). It broke on mixed turns ("What's an EOB, and why was my
+  claim denied?"): it either deferred the general question for no reason or let the account question reach the
+  responder during VERIFY_ID.
+- **Consequence**: See D21.
 
 ## D17. Identity memory is frozen after it leaves UNVERIFIED
 - **Context**: "Write memory always" (§9.1.2) vs. a verified or locked session never re-verifying (V4, INV-7).
@@ -129,3 +134,27 @@ Each entry: context, decision, consequence.
   (Ya-Wen → ya wen). A single comma swaps "Last, First". A numeric date whose first part is over 12 is read as
   day-first (15/03/1985); otherwise mm/dd.
 - **Consequence**: Caller input and record values normalize the same way, so matching stays exact (no fuzzy match).
+
+## D21. Questions carry a kind from the Extractor
+- **Context**: Whether a question needs account data is a language judgment, and a turn-level rule fails on
+  mixed turns (D16).
+- **Decision**: `NLUResult.questions` is a list of `Question(text, kind)`, with `QuestionKind` = account, general,
+  process or out_of_scope. The Extractor fills it in M3 through `QuestionWire` (both fields required, so it stays
+  within the §10.2 schema limits). Memory merge defers `account` questions (and ones with a missing kind) until
+  verification completes, and in RESOLVE_INTENT until a claim is selected. `general`, `process` and
+  `out_of_scope` are never deferred; the M2 policy answers or declines them in any phase (process answers from
+  the reasons library, out-of-scope per §9.2). The routing `path` of a deferred question comes from the best
+  claim-related intent in the same message with confidence ≥ 0.5, else none. SPEC §9.1.2, §10.3.1, extractor rule
+  10 and the few-shot examples (plus a new mixed-turn example) are updated.
+- **Consequence**: A wrong label can't leak data (INV-2 and G1 still hold); it only affects helpfulness.
+
+## D22. The ambiguous P91 claims need different documents
+- **Context**: CL-9101 and CL-9102 both needed documents with no dedicated guidance, so both would fall back to
+  the general guidance and produce identical bundles. Building guidance for the wrong candidate after
+  CHOOSE_CLAIM would then pass every test.
+- **Decision**: CL-9101 now needs `["x-ray images", "treating provider office note"]`; CL-9102 keeps
+  `["referral letter"]`. SPEC §6.6 is updated.
+- **Consequence**: The two bundles differ, "the X-ray one" and "the referral one" still work for ClaimSelector,
+  and CL-9101 reaches K1's exact-match branch, which the starter data never does. A repository test guards this
+  now. M2 adds the guidance tests: each selected P91 claim yields its own bundle, plus inline key lists for K1's
+  remaining branches (an ambiguous superset returns no match; singularization).
