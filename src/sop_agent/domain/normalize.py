@@ -48,7 +48,7 @@ _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def normalize_name(raw: str) -> str | None:
-    """Casefolded tokens joined by single spaces; "Chen, Margaret" becomes "margaret chen"."""
+    """Casefolded tokens joined by single spaces; "Doe, Jane" becomes "jane doe"."""
     text = unicodedata.normalize("NFKC", raw).strip()
     if text.count(",") == 1:
         last, first = (part.strip() for part in text.split(","))
@@ -89,7 +89,7 @@ def _dob_parts(text: str) -> tuple[int, int, int] | None:
         return int(match[1]), int(match[2]), int(match[3])
     if match := _NUMERIC.match(text):
         first, second, year = int(match[1]), int(match[2]), int(match[3])
-        if first > 12 >= second:  # Unambiguously day-first, e.g. 15/03/1985
+        if first > 12 >= second:  # Unambiguously day-first, e.g. 25/12/1990
             first, second = second, first
         return year, first, second
     if match := _MONTH_FIRST.match(text):
@@ -120,7 +120,7 @@ def normalize_id_last4(raw: str) -> str | None:
 
 
 def normalize_policy_number(raw: str) -> str | None:
-    """Uppercased letters and digits only, so "pol 9921" and "POL-9921" agree (V2 signature, V5 lookup).
+    """Uppercased letters and digits only, so "pol 1234" and "POL-1234" agree (V2 signature, V5 lookup).
 
     Applied to both the caller's value and the record. Never counted as a match.
     """

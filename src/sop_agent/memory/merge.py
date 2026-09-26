@@ -209,3 +209,14 @@ def _likely_claim_path(nlu: NLUResult) -> Path | None:
         i for i in nlu.intents if i.path in PATHS_NEEDING_CLAIM and i.confidence >= PATH_HINT_MIN_CONFIDENCE
     ]
     return max(claim_intents, key=lambda i: i.confidence).path if claim_intents else None
+
+
+def mark_deferred_answered(state: SessionState) -> SessionState:
+    """Mark deferred questions answered once a reply that answered them was delivered (§8.2.7, D30).
+
+    Called by the orchestrator after a successful PROCESS_CASE reply; a fallback reply doesn't answer them.
+    """
+    new = state.model_copy(deep=True)
+    for question in new.memory.deferred_questions:
+        question.answered = True
+    return new

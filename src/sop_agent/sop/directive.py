@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
-from sop_agent.domain.enums import EmotionLabel, IdentityField, Phase, VerifyStage
+from sop_agent.domain.enums import EmotionLabel, IdentityField, Path, Phase, VerifyStage
 from sop_agent.sop.phases import Freedom
 
 if TYPE_CHECKING:
@@ -130,13 +130,37 @@ class DeclineInfo(BaseModel):
     streak: int
 
 
+class EmotionStrategy(StrEnum):
+    """Reply order for an emotion (§9.3.2)."""
+
+    ACKNOWLEDGE_EXPLAIN_OFFER_OPTIONS = "acknowledge_explain_offer_options"
+    REASSURE_EXPLAIN_NEXT = "reassure_explain_next"
+    SIMPLIFY_ONE_STEP = "simplify_one_step"
+    CARE_THEN_GENTLE = "care_then_gentle"
+    RESPECT_EXPLAIN_ALTERNATIVES = "respect_explain_alternatives"
+    CALM_BOUNDARY = "calm_boundary"
+
+
 class EmotionPlan(BaseModel):
     """Reply strategy chosen by code for the caller's emotion (§9.3.2)."""
 
     label: EmotionLabel
     intensity: int
-    strategy: str
+    strategy: EmotionStrategy
     reason_key: str | None = None
+
+
+class GroundingRequest(BaseModel):
+    """Which guidance the ContextBuilder should render into grounding this turn (names only, no text).
+
+    Topic triggering (K3/K4) depends on this turn's NLU, which the ContextBuilder doesn't see.
+    """
+
+    topics: list[str] = Field(default_factory=list)
+    background_topics: list[str] = Field(default_factory=list)
+    use_followup_fallback: bool = False
+    alternatives_for: list[str] = Field(default_factory=list)
+    skipped_topics: list[str] = Field(default_factory=list)  # K5: unknown placeholder; logged by the caller
 
 
 class TurnDirective(BaseModel):
@@ -159,6 +183,28 @@ class TurnDirective(BaseModel):
     quick_replies: list[str] = Field(default_factory=list)
     max_sentences: int = 4
     fallback_reply: str
+    grounding: GroundingRequest = Field(default_factory=GroundingRequest)
+
+
+class ConsentObservation(BaseModel):
+    """One poll of the policyholder's consent status (§11.3); `exhausted` means the sequence is used up."""
+
+    status: str
+    exhausted: bool = False
+
+
+class SelectorChoice(BaseModel):
+    """ClaimSelector output (§8.2.6). Untrusted: the policy checks it against the candidates."""
+
+    case_id: str = ""
+    path: Path | None = None
+
+
+class Observations(BaseModel):
+    """External status gathered by the orchestrator before decide(), so the policy stays pure (§11.3)."""
+
+    consent: ConsentObservation | None = None
+    claim_selection: SelectorChoice | None = None
 
 
 @dataclass(frozen=True)

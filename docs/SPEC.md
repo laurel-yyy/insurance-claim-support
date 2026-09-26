@@ -577,6 +577,8 @@ class TurnDirective(BaseModel):
     quick_replies: list[str]
     max_sentences: int
     fallback_reply: str  # Deterministic safe reply (INV-8)
+    grounding: GroundingRequest             # Names only: triggered/background topics, fallback flag,
+                                            # documents needing alternatives (the ContextBuilder renders text)
 
 
 class PendingQuestionKind(StrEnum):
@@ -1072,7 +1074,7 @@ The Extractor outputs `emotion` (neutral, frustrated, angry, anxious, confused, 
 |---|---|---|
 | frustrated / angry | ① Acknowledge the feeling specifically (name the real cause, not a stock phrase) ② Apologize once for the hassle (without admitting fault) ③ Explain in one sentence why the current step is necessary ④ Offer the available options ⑤ One clear next-step question | Shorter replies; don't repeat the previous turn's wording |
 | anxious | Reassure + explain what happens next + plain language | Avoid jargon |
-| confused | Simplify; ask one thing at a time; give an example ("for example, March 15, 1985") | — |
+| confused | Simplify; ask one thing at a time; give the expected format ("month, day and year") without an example date that could match a record | — |
 | sad (e.g., mentions a family member's illness) | Express care first, then move forward gently | Don't probe for private details |
 | refusing | Respect it + explain why + alternative fields + the live-agent option | Counts against the persuasion budget |
 | abusive | Stay calm and professional and set a boundary once; if it happens again → transfer to a live agent or end the conversation | — |
@@ -1536,6 +1538,7 @@ class ToolRegistry:
 | `SEND_SUMMARY_EMAIL` | Policy: a yes to `OFFER_SUMMARY_EMAIL` or `CONFIRM_ALT_EMAIL` | The draft exists; the target address is valid and satisfies C4 | `MockOutbox` writes to `var/outbox/*.json` and keeps a copy in memory for the UI | `EMAIL_SENT` |
 | `TRANSFER_TO_LIVE_AGENT` | Policy: any escalation rule | — | `LiveAgentHandoff` creates a ticket and writes it to `var/handoffs/` | `ESCALATED` |
 
+- **The ClaimSelector result is also an observation**: while a CHOOSE_CLAIM question is open, the orchestrator calls the selector and passes `Observations.claim_selection`; the policy accepts it only if the `case_id` is one of the listed candidates.
 - **Polling consent status is an observation, not an action.** In the CONSENT sub-stage, once the request has been sent, the orchestrator polls `ConsentService` once before calling `decide()` and passes the result to the policy as `observations`. This keeps I/O outside the pure function, so the policy stays deterministic and can be unit-tested directly with observation values.
 - `ScenarioConsentService`: Reads the `status_sequence` for the session's `consent_scenario`. Each request or poll consumes one status; once the sequence is used up, it returns `exhausted=True` along with the last status.
 - If an action fails (for example, a file write fails) → append `ACTION_FAILED`, and the orchestrator replaces the part of the directive that reports the result with the matching failure template (for example, "I wasn't able to send the email just now."). It never claims success.

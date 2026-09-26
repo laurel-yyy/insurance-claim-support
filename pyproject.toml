@@ -33,9 +33,13 @@ packages = ["src/sop_agent"]
 line-length = 110
 target-version = "py312"
 src = ["src", "tests"]
+# Docs are prose; the formatter must not rewrite code blocks in SPEC.md.
+extend-exclude = ["docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "T20", "BLE", "N"]
+# The formatter enforces line length for code; it never splits string literals.
+ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

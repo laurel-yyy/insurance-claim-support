@@ -85,8 +85,12 @@ class IntentScore(BaseModel):
 
 
 class NLUResult(BaseModel):
-    """Everything extracted from one caller message, whatever the phase (write memory always)."""
+    """Everything extracted from one caller message, whatever the phase (write memory always).
 
+    `text` is the raw message, used for deterministic phrase matching (K4); it is never shown to anyone.
+    """
+
+    text: str = ""
     dialog_acts: list[DialogAct] = Field(default_factory=list)
     identity: dict[IdentityField, FieldMention] = Field(default_factory=dict)
     id_kind: IdKind | None = None

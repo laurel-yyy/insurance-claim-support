@@ -158,3 +158,113 @@ Each entry: context, decision, consequence.
   and CL-9101 reaches K1's exact-match branch, which the starter data never does. A repository test guards this
   now. M2 adds the guidance tests: each selected P91 claim yields its own bundle, plus inline key lists for K1's
   remaining branches (an ambiguous superset returns no match; singularization).
+
+## D23. `NLUResult.text` and `TurnDirective.grounding`
+- **Context**: K4 phrase triggering needs the caller's words, and the ContextBuilder (M4) doesn't see this turn's
+  NLU, so it can't know which topics fired.
+- **Decision**: `NLUResult.text` carries the raw message. `TurnDirective.grounding` is a `GroundingRequest` with
+  names only: triggered topics, background topics, whether to use the follow-up fallback, documents needing
+  alternatives, and topics skipped by K5 (an unknown placeholder), which the caller logs. M4 renders the text into
+  grounding; the directive never carries record text. SPEC §7.5 is updated.
+- **Consequence**: `sop/guidance.py` stays pure (no logging); retrieval is decided once, in the policy.
+
+## D24. ClaimSelector output arrives as an observation
+- **Context**: The selector is an LLM call (M3), but `decide()` is pure.
+- **Decision**: The orchestrator calls it only while a CHOOSE_CLAIM question is open and passes the result as
+  `Observations.claim_selection`. The policy accepts it only if the `case_id` is one of the listed candidates (not
+  merely one of the caller's claims) and the path is a claim path; otherwise it's ignored. A case ID the caller
+  states resolves deterministically without the selector. SPEC §11.3 is updated.
+- **Consequence**: The LLM can only pick among options the code offered (BOUNDED).
+
+## D25. Planned actions assume success; failures swap in a template
+- **Context**: The executor runs after `decide()`, so the policy can't know whether an action succeeded.
+- **Decision**: Sending the email moves the session to ENDED and a transfer to ESCALATED in the same turn. The
+  directive tells the responder to report success only if the matching event (`EMAIL_SENT`, `ESCALATED`,
+  `CONSENT_REQUESTED`) is present. On `ACTION_FAILED`, M4 uses `templates.ACTION_FAILURE_TEMPLATES`. The consent
+  request is different: the state moves to *pending* only when the executor confirms the request was sent.
+- **Consequence**: A reply never claims a side effect that didn't happen. A failed email still ends the session,
+  with the failure told to the caller.
+
+## D26. General and process questions are answered in place
+- **Context**: `general_insurance_question` needs no claim.
+- **Decision**: `general` and `process` questions go to `answer_now` in any phase. They don't make RESOLVE_INTENT
+  enter PROCESS_CASE; `infer_path` considers only claim paths.
+- **Consequence**: PROCESS_CASE always has a selected claim.
+
+## D27. Persuasion is counted only at VERIFY_ID gates
+- **Context**: §9.3.4 defines the budget for resisting "the current gate".
+- **Decision**: Resistance is a refusal, a complaint ("just tell me") or frustration/anger of intensity ≥ 2 while
+  in VERIFY_ID. Progress (a new field captured or a phase change) resets it. At `PERSUASION_MAX` the agent offers a
+  transfer once; resisting again after that offer transfers (`PERSUASION_EXHAUSTED`). A "no" to the offer means
+  "continue here" and isn't counted.
+- **Consequence**: Complaints after verification never trigger an automatic transfer; the negative-emotion rule
+  (offer after 3 strong turns) still applies there.
+
+## D28. Detecting "no, not that one"
+- **Context**: §8.2.5 has no pending question for an automatically resolved claim.
+- **Decision**: A `deny` act with no open question, on the caller's first turn after a claim was resolved
+  automatically, excludes the claim and returns to RESOLVE_INTENT. Hints stated this turn that contradict the
+  selected claim (case ID, type or status) also return to RESOLVE_INTENT. The auto-resolved entry turn doesn't set
+  ANYTHING_ELSE, so a "no" there isn't read as "I'm done".
+- **Consequence**: Rejections are caught right after auto-resolution; later corrections work through hints.
+
+## D29. Turn-level signals belong to the phase the turn started in
+- **Context**: §7.4 lets one message pass several phases.
+- **Decision**: "done", "deny" and yes/no answers are used only by the handler of the phase where the turn began,
+  and a yes/no only if that phase asked the question and the kind matches (`TurnContext.answer()`, consumed once).
+  The open question is cleared at the start of each turn; a handler re-asks when it still needs an answer.
+- **Consequence**: Only the latest offer can be answered (INV-6); a hop can never reuse a confirmation.
+
+## D30. Deferred questions are marked answered by the orchestrator
+- **Context**: §8.2.7 marks them answered "after the directive is delivered successfully".
+- **Decision**: The policy lists unanswered ones in `answer_now` whenever PROCESS_CASE runs.
+  `memory.merge.mark_deferred_answered()` is called by M4 after a non-fallback reply.
+- **Consequence**: A fallback reply doesn't lose them.
+
+## D31. When the policy asks "anything else?"
+- **Context**: §8.3.8.
+- **Decision**: A PROCESS_CASE turn that stays in the phase ends with it (ANYTHING_ELSE), except on the
+  auto-resolved entry turn (D28) and when a live-agent offer is open. A "no" moves to POST_PROCESS; a `done` act
+  moves directly.
+- **Consequence**: The caller can always close the case in one step.
+
+## D32. Module layout additions
+- **Context**: §5 lists the handler files, but they need shared types, and VERIFY_ID has two sub-flows.
+- **Decision**: Added `sop/handlers/base.py` (turn context, directive parts, step result, `PolicyConfig`),
+  `sop/handlers/verify_rep.py` (authorization and consent, split from `verify_id.py` for size) and
+  `sop/handlers/terminal.py` (ESCALATED/ENDED). `EmotionStrategy` lives in `sop/directive.py` so `EmotionPlan` is
+  typed without an import cycle. `PolicyEngine` is wired in `container.py`.
+- **Consequence**: Every module stays under ~220 lines.
+
+## D33. Failed authorization and ended consent are final for the session
+- **Context**: A4 says never reveal whether other representatives exist.
+- **Decision**: Once a representative is `not_authorized`, later name or relationship changes aren't re-checked.
+  Consent `timeout` or `declined` is also final; later turns repeat the explanation and the live-agent offer.
+- **Consequence**: A caller can't probe the representative registry by trying names.
+
+## D34. Resolver details the spec leaves open
+- **Context**: §8.2.2.
+- **Decision**: A claim with an unknown status (`OTHER`) gets neither a status match nor a penalty. Candidates at
+  ≥ 2 that don't meet the unique rule (including a single weak candidate) are offered through CHOOSE_CLAIM for the
+  caller to confirm. Keyword overlap is token-based, with naive singularization and a small stopword list.
+- **Consequence**: A lone type-only hint ("my auto claim") asks for confirmation instead of assuming.
+
+## D35. DOB format example changed
+- **Context**: §9.3.2 suggested the example "March 15, 1985", which is a starter policyholder's real DOB.
+- **Decision**: Fallbacks ask for "your full date of birth: month, day and year" with no example date. SPEC §9.3.2
+  is updated.
+- **Consequence**: No fixture value appears in business logic (INV-10) or in pre-verification replies.
+
+## D36. The formatter owns line length
+- **Context**: `ruff format` wraps code at 110 but never splits string literals, so E501 flagged long strings.
+- **Decision**: E501 is ignored in the ruff config; the formatter still enforces the limit for code.
+- **Consequence**: Long directive strings stay readable as single literals.
+- **Note**: ruff also formats Python code blocks inside Markdown. `docs/` is now excluded from ruff, because
+  earlier `ruff format .` runs (starting in M0, before the first commit) re-aligned comments in SPEC.md code blocks.
+  Those changes are whitespace-only and change no content.
+
+## D37. A global live-agent offer wins the open question
+- **Context**: Off-topic, persuasion and emotion rules can offer a transfer while a handler also asks something.
+- **Decision**: The global offer replaces the handler's pending question for that turn; the handler re-asks next
+  turn.
+- **Consequence**: The escalation path is never hidden behind another question.
