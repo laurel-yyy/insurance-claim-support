@@ -69,3 +69,63 @@ Each entry: context, decision, consequence.
 - **Context**: `data/kb/faq.md` (§6.7) isn't used until grounding is assembled.
 - **Decision**: Create it in M4 together with `agent/context.py`, the first thing that reads it.
 - **Consequence**: `FAQ_PATH` is configured now but points at a file that doesn't exist yet; nothing reads it before M4.
+
+## D12. `NLUResult` (domain side) defined before the Extractor
+- **Context**: Memory merge (M1) consumes NLU output, but the Extractor is M3.
+- **Decision**: `nlu/schema.py` now holds only the domain `NLUResult` and its vocabulary enums. Identity values
+  stay raw there (`FieldMention(raw, source)`); memory merge normalizes them with `today` from the session
+  settings. The wire schema and `to_domain` come in M3.
+- **Consequence**: `sop/` and `memory/` may import `nlu.schema`; it imports nothing from `llm/`.
+
+## D13. Status `Literal`s from §9.1.1 are `StrEnum`s
+- **Context**: The spec writes identity, authorization and consent statuses as `Literal[...]`; CLAUDE.md requires
+  `StrEnum` for statuses.
+- **Decision**: `IdentityStatus`, `VerifiedAs`, `AuthorizationStatus`, `ConsentStatus`, `ValueSource`,
+  `ActionKind` and `VerifyStage` are enums with the same string values.
+- **Consequence**: Same serialized values; no magic strings.
+
+## D14. Identity check returns events instead of writing them
+- **Context**: A policyholder pass completes verification, a representative pass doesn't (§7.5).
+- **Decision**: `run_identity_check(identity, caller_role, ...)` returns a new `IdentityState`, the outcome and
+  events. An unknown role counts as policyholder (A1). `matched_fields` stays in the outcome for the audit trace
+  and never enters events.
+- **Consequence**: The M2 handler just appends the events and decides the transition.
+
+## D15. The anti-probing signature includes the policy number
+- **Context**: V2 compares "a hash of the sorted field=value pairs"; the spec doesn't say whether the policy number
+  is part of it.
+- **Decision**: It is. A new policy number changes the candidate set (V5), so it counts as new information.
+- **Consequence**: A caller can trigger one re-evaluation by changing only the policy number; each one still
+  counts toward the lockout if it fails.
+
+## D16. When a question is deferred (spec is silent)
+- **Context**: §9.1.2 defers questions "the current phase can't answer" but NLU questions carry no category.
+- **Decision**: Questions are deferred when the phase is VERIFY_ID, or RESOLVE_INTENT with no selected claim, and
+  the same message has an intent for a path that needs a claim (confidence ≥ 0.5). General questions are never
+  deferred. Duplicates (case-insensitive) are dropped.
+- **Consequence**: "Why was it denied?" before verification is answered right after; "what is an EOB?" is answered
+  immediately from general knowledge.
+
+## D17. Identity memory is frozen after it leaves UNVERIFIED
+- **Context**: "Write memory always" (§9.1.2) vs. a verified or locked session never re-verifying (V4, INV-7).
+- **Decision**: Merge stops writing identity fields, declined fields and the policy number once the status is
+  IDENTITY_VERIFIED, VERIFIED or LOCKED. Everything else keeps merging.
+- **Consequence**: Later corrections can't change who the session belongs to.
+
+## D18. `raw_mentions` are built by code
+- **Context**: `CaseHints.raw_mentions` are "summaries of the caller's words".
+- **Decision**: Built deterministically from this turn's stated hints (e.g. "denied healthcare claim, January"),
+  never from free LLM text or record data.
+- **Consequence**: Safe to show before verification (INV-3); wording is plain.
+
+## D19. `PolicyDecision` is a frozen dataclass
+- **Context**: It references `SessionState`, while `memory/state.py` imports event types from `sop/directive.py`.
+- **Decision**: A frozen dataclass with a type-only import, instead of a Pydantic model.
+- **Consequence**: No import cycle; it is an internal return value and never serialized as a whole.
+
+## D20. Name normalization details
+- **Context**: §8.1.1 says "strip punctuation" without details.
+- **Decision**: Apostrophes are removed (O'Brien → obrien); other punctuation and symbols become spaces
+  (Ya-Wen → ya wen). A single comma swaps "Last, First". A numeric date whose first part is over 12 is read as
+  day-first (15/03/1985); otherwise mm/dd.
+- **Consequence**: Caller input and record values normalize the same way, so matching stays exact (no fuzzy match).

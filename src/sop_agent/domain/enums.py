@@ -71,3 +71,72 @@ class CallerRole(StrEnum):
     POLICYHOLDER = "policyholder"
     AUTHORIZED_REPRESENTATIVE = "authorized_representative"
     UNKNOWN = "unknown"
+
+
+class EmotionLabel(StrEnum):
+    """Emotion recognized in the latest message (§9.3.1)."""
+
+    NEUTRAL = "neutral"
+    FRUSTRATED = "frustrated"
+    ANGRY = "angry"
+    ANXIOUS = "anxious"
+    CONFUSED = "confused"
+    SAD = "sad"
+
+
+class IdentityStatus(StrEnum):
+    """Verification status. IDENTITY_VERIFIED is the representative flow's midpoint (§7.5)."""
+
+    UNVERIFIED = "unverified"
+    IDENTITY_VERIFIED = "identity_verified"
+    VERIFIED = "verified"
+    LOCKED = "locked"
+
+
+class VerifiedAs(StrEnum):
+    """Who completed verification."""
+
+    POLICYHOLDER = "policyholder"
+    REPRESENTATIVE = "representative"
+
+
+class AuthorizationStatus(StrEnum):
+    """Outcome of the representative authorization check (A3/A4)."""
+
+    NOT_NEEDED = "not_needed"
+    NEEDS_INFO = "needs_info"
+    MATCHED = "matched"
+    NOT_AUTHORIZED = "not_authorized"
+
+
+class ConsentStatus(StrEnum):
+    """Real-time policyholder consent status (A5/A6)."""
+
+    NOT_REQUESTED = "not_requested"
+    PENDING = "pending"
+    APPROVED = "approved"
+    DECLINED = "declined"
+    TIMEOUT = "timeout"
+
+
+class EscalationReason(StrEnum):
+    """Why a session was handed to a live agent (§9.3.4, §8.3.7)."""
+
+    SAFETY = "SAFETY"
+    CALLER_REQUEST = "CALLER_REQUEST"
+    VERIFICATION_LOCKED = "VERIFICATION_LOCKED"
+    OFF_TOPIC = "OFF_TOPIC"
+    PERSUASION_EXHAUSTED = "PERSUASION_EXHAUSTED"
+    ABUSE = "ABUSE"
+    DOCUMENT_ALTERNATIVES_EXHAUSTED = "DOCUMENT_ALTERNATIVES_EXHAUSTED"
+
+
+PATHS_NEEDING_CLAIM: frozenset[Path] = frozenset(
+    {
+        Path.STATUS_INQUIRY,
+        Path.DENIAL_QUESTION,
+        Path.DOCUMENT_SUBMISSION,
+        Path.NEXT_STEPS,
+        Path.GENERAL_CLAIM_QUESTION,
+    }
+)
