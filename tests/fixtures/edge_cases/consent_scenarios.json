@@ -1,0 +1,5 @@
+{
+  "declined": {
+    "status_sequence": ["pending", "declined"]
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "party_id": "P90",
+    "name": "Margaret Chen",
+    "policy_number": "POL-5530",
+    "dob": "1972-07-04",
+    "id_type": "ssn_last4",
+    "id_last4": "8123",
+    "phone": "+14155550190",
+    "email": "mchen72@example.com"
+  },
+  {
+    "party_id": "P91",
+    "name": "Jordan Park",
+    "policy_number": "POL-6610",
+    "dob": "1988-02-19",
+    "id_type": "ssn_last4",
+    "id_last4": "3051",
+    "phone": "+12065550141",
+    "email": "jordan.park@example.com"
+  },
+  {
+    "party_id": "P92",
+    "name": "Sam Rivera",
+    "policy_number": "POL-7205",
+    "dob": "1995-11-30",
+    "id_type": "national_id_last4",
+    "id_last4": "7719",
+    "phone": "+13125550177",
+    "email": "sam.rivera@example.com"
+  }
+]
