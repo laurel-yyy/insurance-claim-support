@@ -59,3 +59,13 @@ Each entry: context, decision, consequence.
 - **Context**: §14.1 puts comments after values on the same line (e.g. `DEMO_TODAY=2026-03-10  # ...`).
 - **Decision**: Moved those comments to the line above.
 - **Consequence**: No risk of an env loader reading the comment as part of the value.
+
+## D10. LF line endings enforced by `.gitattributes`
+- **Context**: The Windows dev machine converts line endings on checkout, and the Docker image runs on Linux.
+- **Decision**: `.gitattributes` sets `* text=auto eol=lf`; binary image types are marked binary.
+- **Consequence**: Line endings are the same on every platform; no CRLF churn in diffs.
+
+## D11. General FAQ deferred until the context builder exists
+- **Context**: `data/kb/faq.md` (§6.7) isn't used until grounding is assembled.
+- **Decision**: Create it in M4 together with `agent/context.py`, the first thing that reads it.
+- **Consequence**: `FAQ_PATH` is configured now but points at a file that doesn't exist yet; nothing reads it before M4.
