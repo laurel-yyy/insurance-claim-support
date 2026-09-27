@@ -45,3 +45,14 @@ def test_api_key_is_secret_and_absent_from_repr(monkeypatch: pytest.MonkeyPatch)
     assert s.llm_configured is True
     assert "sk-ant-test-secret" not in repr(s)
     assert "sk-ant-test-secret" not in s.model_dump_json()
+
+
+def test_api_key_whitespace_is_trimmed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`docker run --env-file` passes `ANTHROPIC_API_KEY= sk-...` through verbatim (D64)."""
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", " sk-ant-test-secret \t")
+    settings = Settings(_env_file=None)
+    assert settings.anthropic_api_key is not None
+    assert settings.anthropic_api_key.get_secret_value() == "sk-ant-test-secret"
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "   ")
+    assert Settings(_env_file=None).llm_configured is False

@@ -1,3 +1,5 @@
+HOST_PORT ?= 8000
+
 .PHONY: install dev test live eval lint typecheck check docker-build docker-run
 
 install:
@@ -28,4 +30,4 @@ docker-build:
 	docker build -t insurance-sop-agent .
 
 docker-run:
-	docker run --rm -p 8000:8000 --env-file .env insurance-sop-agent
+	docker run --rm -p $(HOST_PORT):8000 --env-file .env insurance-sop-agent

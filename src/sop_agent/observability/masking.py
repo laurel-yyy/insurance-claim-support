@@ -18,6 +18,11 @@ _ISO_DATE = re.compile(r"\b(19|20)\d{2}-\d{2}-\d{2}\b")
 _PHONE = re.compile(r"(?<![\d-])(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?(\d{2})(\d{2})(?![\d-])")
 
 
+def redact_secrets(text: str) -> str:
+    """Remove anything shaped like an Anthropic API key, leaving the rest of the text untouched."""
+    return _API_KEY.sub(REDACTED_KEY, text)
+
+
 def mask_email(email: str) -> str:
     local, _, domain = email.partition("@")
     if not domain:

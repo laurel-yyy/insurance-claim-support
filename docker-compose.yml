@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    image: insurance-sop-agent
+    ports:
+      - "${HOST_PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      # Outbox, SMS, traces and handoff tickets, inspectable on the host.
+      - ./var:/app/var

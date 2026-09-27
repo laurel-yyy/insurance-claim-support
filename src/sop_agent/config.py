@@ -48,9 +48,13 @@ class Settings(BaseSettings):
     @field_validator("anthropic_api_key", "responder_effort", "demo_today", mode="before")
     @classmethod
     def _empty_means_unset(cls, value: object) -> object:
-        """An empty env value means "not set": DEMO_TODAY= selects the real date (§14.1)."""
-        if isinstance(value, str) and not value.strip():
-            return None
+        """Trim whitespace, and treat an empty value as "not set": DEMO_TODAY= selects the real date (§14.1).
+
+        Trimming matters for `docker run --env-file`, which passes `KEY= value` through verbatim (D64).
+        """
+        if isinstance(value, str):
+            value = value.strip()
+            return value or None
         return value
 
     @property

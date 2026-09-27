@@ -1,8 +1,14 @@
-"""Structured JSON logging. Pass fields via `extra={"fields": {...}}`; values must already be masked."""
+"""Structured JSON logging. Pass fields via `extra={"fields": {...}}`; values must already be masked.
+
+As a last line of defense (INV-9), every formatted line has anything shaped like an API key redacted, including
+exception tracebacks, where third-party error messages can quote request headers (D64).
+"""
 
 import json
 import logging
 from typing import Any
+
+from sop_agent.observability.masking import redact_secrets
 
 _RESERVED = "fields"
 
@@ -22,7 +28,7 @@ class JsonFormatter(logging.Formatter):
             payload.update(fields)
         if record.exc_info:
             payload["exc"] = self.formatException(record.exc_info)
-        return json.dumps(payload, default=str)
+        return redact_secrets(json.dumps(payload, default=str))
 
 
 def configure_logging(level: str) -> None:

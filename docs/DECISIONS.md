@@ -54,6 +54,7 @@ Each entry: context, decision, consequence.
 - **Decision**: The Makefile is written per §14.3; locally, `make check` was verified by running its recipes
   directly (`uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src`, `uv run pytest -m "not live"`).
 - **Consequence**: None for Docker or Unix environments.
+- **Update (M8)**: The README gives the `uv run ...` commands next to each `make` target, and Docker runs the app without `make`.
 
 ## D9. `.env.example` comments on their own lines
 - **Context**: §14.1 puts comments after values on the same line (e.g. `DEMO_TODAY=2026-03-10  # ...`).
@@ -69,6 +70,7 @@ Each entry: context, decision, consequence.
 - **Context**: `data/kb/faq.md` (§6.7) isn't used until grounding is assembled.
 - **Decision**: Create it in M4 together with `agent/context.py`, the first thing that reads it.
 - **Consequence**: `FAQ_PATH` is configured now but points at a file that doesn't exist yet; nothing reads it before M4.
+- **Resolved in M4**: `data/kb/faq.md` exists and is grounded through the GENERAL_KB scope.
 
 ## D12. `NLUResult` (domain side) defined before the Extractor
 - **Context**: Memory merge (M1) consumes NLU output, but the Extractor is M3.
@@ -207,6 +209,7 @@ Each entry: context, decision, consequence.
   selected claim (case ID, type or status) also return to RESOLVE_INTENT. The auto-resolved entry turn doesn't set
   ANYTHING_ELSE, so a "no" there isn't read as "I'm done".
 - **Consequence**: Rejections are caught right after auto-resolution; later corrections work through hints.
+- **Refined by D63**: a `deny` that comes with `done` closes the case instead of rejecting the claim.
 
 ## D29. Turn-level signals belong to the phase the turn started in
 - **Context**: §7.4 lets one message pass several phases.
@@ -510,3 +513,26 @@ Each entry: context, decision, consequence.
   D39). In PROCESS_CASE, a `deny` that comes with `done` right after an auto-resolved claim closes the case instead
   of rejecting the claim (D28 refined).
 - **Consequence**: Both scenarios pass; the fix is general and no scenario text appears in code.
+
+## D64. API key whitespace, and keys in exception text
+- **Context**: In the M8 Docker test, `docker run --env-file .env` passed `ANTHROPIC_API_KEY= sk-...` through
+  verbatim (pydantic-settings' own `.env` loader strips it, so this never showed up locally). The leading space made
+  the HTTP header illegal, every call failed, and the fail-closed path logged the traceback, whose third-party error
+  message quoted the header value, key included. The fallbacks worked, but the key reached the container logs.
+- **Decision**: Settings trim whitespace from string values before use, and treat an empty value as unset. The JSON
+  log formatter redacts anything shaped like an Anthropic API key in the whole formatted line, including exception
+  tracebacks, as the last line of defense for INV-9.
+- **Consequence**: The same `.env` works locally and in Docker, and a key can't reach the logs through a third-party
+  error message. Regression tests cover both.
+
+## D65. Docker image and Compose
+- **Context**: §14.2.
+- **Decision**: `python:3.12-slim` with uv from the pinned `ghcr.io/astral-sh/uv:0.11.2` image; dependencies are
+  installed with the lockfile and a build cache, runtime dependencies only, and the app is installed non-editable
+  (prompts, templates and the UI are package data). The image also contains the starter fixtures, the FAQ and the
+  eval scenario scripts (for Play and Step), but no tests, docs, eval runner, `.env` or `var/`; it runs as uid 10001,
+  with a `HEALTHCHECK` on `/api/health` via `urllib` and `DEMO_TODAY=2026-03-10`. The image is about 350 MB. Compose
+  reads `.env` if present, mounts `./var`, and takes `HOST_PORT` (default 8000); the Makefile's `docker-run` accepts
+  the same variable.
+- **Consequence**: Verified: a clean build; the container reported healthy; a real Margaret turn over HTTP reached
+  PROCESS_CASE; `docker logs` held no key; and traces appeared on the host through the Compose mount.
