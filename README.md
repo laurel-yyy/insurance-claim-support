@@ -45,6 +45,10 @@ uv run uvicorn sop_agent.main:create_app --factory --reload --port 8000     # or
 `make` targets (`install`, `dev`, `test`, `live`, `eval`, `check`, `docker-build`, `docker-run`) wrap the same
 commands. Without `make` (common on Windows), run the `uv run ...` lines from the `Makefile` directly.
 
+On Windows, clone into a short path (for example `C:\src\...`): some files in the `anthropic` package have long
+names, and a deeply nested checkout can exceed the 260-character path limit, which makes `uv sync` silently skip
+them. Enabling long paths in Windows also fixes it. Docker is unaffected.
+
 ### Providing the API key
 
 - **Server key:** set `ANTHROPIC_API_KEY` (environment, `.env`, or `-e` for Docker). It always wins.
