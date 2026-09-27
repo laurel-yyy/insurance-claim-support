@@ -31,7 +31,8 @@ async def test_live_margaret_turn_end_to_end(tmp_path: Path) -> None:
     session = orchestrator.start_session()
 
     result = await orchestrator.handle_turn(session.session_id, MARGARET)
-    print(f"\nREPLY: {result.reply}\nEVENTS: {[e.type.value for e in result.events]}")
+    events = [e.type.value for e in result.events]
+    _log.info("live turn", extra={"fields": {"reply": result.reply, "events": events}})
 
     kinds = {e.type for e in result.events}
     assert result.phase is Phase.PROCESS_CASE
