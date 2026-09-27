@@ -1,0 +1,9 @@
+name: margaret_happy_path
+description: The brief's test case, then document questions, then the email summary.
+today: 2026-03-10
+consent_scenario: default
+turns:
+  - user: "I'm the policyholder. My name is Margaret Chen, policy POL-9921. I'm calling about my denied healthcare claim from January. DOB is 1985-03-15, SSN last four is 4472."
+  - user: "How do I send them? I might not be able to get the original pathology report."
+  - user: "Thanks, that's all."
+  - user: "Yes, please send it."

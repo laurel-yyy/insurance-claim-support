@@ -1,6 +1,7 @@
 """Composition root: the only place that builds and wires services from Settings (§3.2)."""
 
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from sop_agent.agent.context import ContextBuilder
@@ -81,7 +82,7 @@ class Container:
         _log.info("fixtures loaded", extra={"fields": summary.model_dump(mode="json")})
         var = settings.var_dir
         services = Services(
-            store=InMemorySessionStore(),
+            store=InMemorySessionStore(settings.session_ttl_minutes * 60, settings.max_sessions),
             consent=ScenarioConsentService(repository, sms_dir=var / "sms"),
             outbox=MockOutbox(var / "outbox"),
             handoff=LiveAgentHandoff(var / "handoffs"),
@@ -144,8 +145,11 @@ class Container:
             self.make_summary_writer(llm),
         )
 
-    def make_orchestrator(self, agents: Agents, tracer: TraceSink | None = None) -> Orchestrator:
-        """One orchestrator for the server key (M6 adds per-session keys via `agents_for`)."""
+    def make_orchestrator(
+        self, agents: Agents | Callable[[str], Agents], tracer: TraceSink | None = None
+    ) -> Orchestrator:
+        """`agents` is one fixed set (tests, CLI) or a per-session lookup such as `LLMAccess.agents_for`."""
+        agents_for = agents if callable(agents) else (lambda _session_id: agents)
         s, services = self.settings, self.services
         executor = ActionExecutor(
             repo=self.repository,
@@ -162,13 +166,62 @@ class Container:
             guard=OutputGuard(services.index),
             executor=executor,
             observer=Observer(self.repository, services.consent),
-            agents_for=lambda _session_id: agents,
+            agents_for=agents_for,
             tracer=tracer or JsonlTraceWriter(s.var_dir / "traces"),
             clock=self.clock,
             agent_name=s.agent_name,
             company_name=s.company_name,
             default_consent_scenario=s.consent_scenario,
         )
+
+
+class LLMNotConfiguredError(RuntimeError):
+    """No server API key and no key entered for this session (§13.1)."""
+
+
+@dataclass
+class LLMAccess:
+    """Which LLM components serve a session: the server key, or a key a tester entered in the UI.
+
+    A UI-entered key lives only here, in memory, keyed by session ID. It is never part of SessionState, traces,
+    logs or any response, and it is dropped when the session is evicted (INV-9, D57).
+    """
+
+    container: "Container"
+    llm_factory: Callable[[str | None], LLMClient]
+    _server: Agents | None = None
+    _sessions: dict[str, Agents] = field(default_factory=dict)
+
+    @property
+    def server_key_configured(self) -> bool:
+        return self.container.settings.llm_configured
+
+    @property
+    def client_keys_allowed(self) -> bool:
+        return self.container.settings.allow_client_api_key
+
+    def can_serve(self, client_key: str | None) -> bool:
+        return self.server_key_configured or bool(client_key and self.client_keys_allowed)
+
+    def register(self, session_id: str, client_key: str | None) -> None:
+        """Server key wins; otherwise the session gets its own client built from the entered key."""
+        if self.server_key_configured:
+            return
+        if not (client_key and self.client_keys_allowed):
+            raise LLMNotConfiguredError("no API key available")
+        self._sessions[session_id] = self.container.make_agents(self.llm_factory(client_key))
+
+    def agents_for(self, session_id: str) -> Agents:
+        if session_id in self._sessions:
+            return self._sessions[session_id]
+        if not self.server_key_configured:
+            raise LLMNotConfiguredError("no API key available")
+        if self._server is None:
+            self._server = self.container.make_agents(self.llm_factory(None))
+        return self._server
+
+    def forget(self, session_id: str) -> None:
+        self._sessions.pop(session_id, None)
 
 
 def load_prompts() -> Prompts:

@@ -347,6 +347,7 @@ Each entry: context, decision, consequence.
 - **Decision**: `memory/store.py` has a `SessionStore` protocol and `InMemorySessionStore` (deep copies in and
   out, one `asyncio.Lock` per session). TTL and the session cap come in M6.
 - **Consequence**: Concurrent requests for one session are serialized already.
+- **Superseded in M6 (D56)**: the store now has TTL, a session cap and eviction hooks.
 
 ## D46. PyYAML dependency
 - **Context**: §10.4 renders the directive as YAML; M7's eval scenarios are YAML.
@@ -439,3 +440,47 @@ Each entry: context, decision, consequence.
   policyholder's data) and G3 (no DOB, ID digits or phone). Any violation or LLM failure uses the template content.
   The subject is always set by code to the §8.4.1 format. HTML is autoescaped; text is plain.
 - **Consequence**: The email can't contain facts the conversation didn't establish.
+
+## D56. Session store: TTL, cap and eviction order
+- **Context**: §13.1 asks for a TTL (default 2 hours) and a session cap (default 500) so memory can't grow.
+- **Decision**: Expiry is measured on the monotonic clock from the last activity, not the demo date. At the cap,
+  expired sessions are evicted first, then the least recently used. An `on_evict` hook drops that session's
+  UI-entered key and its latest debug trace. Unknown or expired sessions get 404 with "Start a new conversation."
+- **Consequence**: A long-idle demo session disappears cleanly; the UI can recover with one click.
+
+## D57. A key entered in the UI lives only in an in-memory registry
+- **Context**: §13.1 lets a tester enter a key when the server has none (`ALLOW_CLIENT_API_KEY=true`).
+- **Decision**: `LLMAccess` maps session ID to that session's LLM components. The key is never part of
+  SessionState, traces, logs or any response, and the browser keeps it only in page memory (no local storage). The
+  server key always wins. With neither, `POST /api/sessions` returns 503 with setup instructions; an unknown
+  consent scenario returns 422.
+- **Consequence**: Tests assert the key is absent from every response, the log capture and every file under
+  `var/`, and that eviction drops it.
+
+## D58. What the DebugView masks
+- **Context**: §13.1 says the DebugView is fully masked.
+- **Decision**: Identity fields appear only as provided/declined/missing. Memory, events, the pending question,
+  the handoff ticket and the last-turn trace go through the shared masking function. Two things are shown as they
+  are: the email draft's subject and body (exactly what the verified caller is offered, already guarded and free of
+  ID, DOB and phone), and the replies in the conversation. Email addresses in the draft and outbox are masked.
+- **Consequence**: The Inspector is readable (the shared masking also hides any 4-digit number, which would blank
+  out years in the draft) without exposing identity data.
+
+## D59. Scenario scripts for Play and Step
+- **Context**: `GET /api/scenarios` needs scripts before M7 writes the eval suite.
+- **Decision**: The API reads `SCENARIOS_DIR/*.yaml` (new setting, default `evals/scenarios`) in the §15.3 format
+  and returns name, description, consent scenario and the user turns; malformed files are skipped with a warning.
+  M6 adds five demo scripts from §18.3 without `expect` blocks: margaret_happy_path,
+  frustrated_before_verification, representative_consent_approved, representative_consent_timeout,
+  off_topic_retries. M7 adds the assertions and the remaining scenarios.
+- **Consequence**: The demo script in §18.3 can be played from the header.
+
+## D60. UI details
+- **Context**: §13.2.
+- **Decision**: Public Sans is loaded from Google Fonts with a system-font fallback (no build step, no font files
+  in the repo). Below 1200px a panel switcher (Conversation, SOP route, Inspector) shows one panel at a time. Every
+  server value is rendered with `textContent`; the email preview shows the plain-text version rather than
+  rendering server HTML. Banners come from events (verified, waiting for approval, approved, transferred, email
+  sent, locked, timeout). The health endpoint also returns `allow_client_api_key`, the company and agent names, so
+  no branding is hard-coded in the page.
+- **Consequence**: The page works offline except for the web font, which falls back to the system font.

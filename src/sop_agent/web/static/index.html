@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claims support demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#message">Skip to the message box</a>
+  <header class="topbar">
+    <h1 id="title">Claims support demo</h1>
+    <p class="demo-date" id="demo-date">Demo date loading</p>
+    <div class="controls">
+      <label class="control">Scenario
+        <select id="scenario"><option value="">Choose a scenario</option></select>
+      </label>
+      <button type="button" id="play" disabled>Play scenario</button>
+      <button type="button" id="step" disabled>Step</button>
+      <label class="control">Consent
+        <select id="consent"></select>
+      </label>
+      <button type="button" id="new" class="primary">New conversation</button>
+      <span class="key-status" id="key-status" role="status"></span>
+    </div>
+  </header>
+
+  <nav class="views" aria-label="Panels" id="views">
+    <button type="button" aria-pressed="true" data-view="conversation">Conversation</button>
+    <button type="button" aria-pressed="false" data-view="route">SOP route</button>
+    <button type="button" aria-pressed="false" data-view="inspector">Inspector</button>
+  </nav>
+
+  <main class="layout" data-view="conversation">
+    <section class="panel route-panel" aria-labelledby="route-title">
+      <h2 id="route-title">SOP route</h2>
+      <ol class="route" id="route">
+        <li data-phase="VERIFY_ID">
+          <span class="step-name">Verify ID</span>
+          <svg class="lock" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path class="shackle" d="M7 11V8a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2"/>
+            <rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/>
+          </svg>
+          <span class="lock-label" id="lock-label">Locked</span>
+          <p class="substage" id="substage"></p>
+        </li>
+        <li data-phase="RESOLVE_INTENT">
+          <span class="step-name">Resolve</span>
+          <ul class="chips" id="chips" aria-label="Held for later"></ul>
+        </li>
+        <li data-phase="PROCESS_CASE"><span class="step-name">Process case</span></li>
+        <li data-phase="POST_PROCESS"><span class="step-name">Wrap up</span></li>
+      </ol>
+      <p class="terminal" id="terminal" hidden></p>
+    </section>
+
+    <section class="panel conversation-panel" aria-labelledby="conversation-title">
+      <h2 id="conversation-title" class="visually-hidden">Conversation</h2>
+      <div class="log" id="log" role="log" aria-live="polite" aria-relevant="additions"></div>
+      <p class="typing" id="typing" hidden>Typing</p>
+      <div class="quick-replies" id="quick-replies" aria-label="Quick replies"></div>
+      <form class="composer" id="composer">
+        <label for="message" class="visually-hidden">Message</label>
+        <input id="message" name="message" autocomplete="off" maxlength="2000" placeholder="Type a message" disabled>
+        <button type="submit" class="primary" id="send" disabled>Send</button>
+      </form>
+    </section>
+
+    <section class="panel inspector-panel" aria-labelledby="inspector-title">
+      <h2 id="inspector-title">Inspector</h2>
+      <div role="tablist" aria-label="Inspector" class="tabs" id="tabs">
+        <button role="tab" id="tab-memory" aria-controls="pane-memory" aria-selected="true">Memory</button>
+        <button role="tab" id="tab-turn" aria-controls="pane-turn" aria-selected="false" tabindex="-1">Turn</button>
+        <button role="tab" id="tab-outbox" aria-controls="pane-outbox" aria-selected="false" tabindex="-1">Outbox and tickets</button>
+      </div>
+      <div role="tabpanel" id="pane-memory" aria-labelledby="tab-memory" tabindex="0">
+        <p class="empty">Start a conversation to see memory.</p>
+      </div>
+      <div role="tabpanel" id="pane-turn" aria-labelledby="tab-turn" tabindex="0" hidden>
+        <p class="empty">Send a message to see this turn's events, directive and guard results.</p>
+      </div>
+      <div role="tabpanel" id="pane-outbox" aria-labelledby="tab-outbox" tabindex="0" hidden>
+        <p class="empty">Emails and handoff tickets appear here once they exist.</p>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="key-dialog" aria-labelledby="key-title">
+    <form method="dialog" id="key-form">
+      <h2 id="key-title">Enter an Anthropic API key</h2>
+      <p>This server has no API key. Your key is kept only in this page's memory and in the server's memory for
+        this conversation. It's never stored, logged or shown.</p>
+      <label for="key-input">API key</label>
+      <input id="key-input" type="password" autocomplete="off" required>
+      <div class="dialog-actions">
+        <button type="submit" class="primary" value="save">Save and start</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

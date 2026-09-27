@@ -1,0 +1,8 @@
+name: frustrated_before_verification
+description: The bonus case. Empathy, a reason and options, without leaking anything before verification.
+today: 2026-03-10
+consent_scenario: default
+turns:
+  - user: "Hi, this is Margaret Chen."
+  - user: "I already told you who I am. This is ridiculous. Just tell me why my claim was denied."
+  - user: "Fine. My date of birth is March 15, 1985 and my email is margaret@email.com."

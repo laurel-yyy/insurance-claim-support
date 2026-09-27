@@ -1,0 +1,11 @@
+name: representative_consent_timeout
+description: The same call with the timeout scenario. Consent never arrives, so the account isn't discussed.
+today: 2026-03-10
+consent_scenario: timeout
+turns:
+  - user: "Hi, this is David Chen. I'm calling for my mom, Margaret Chen. Her birthday is March 15, 1985 and her phone is 650-521-2836."
+  - user: "Yes, go ahead and text her."
+  - user: "Check again"
+  - user: "Check again"
+  - user: "Check again"
+  - user: "Check again"

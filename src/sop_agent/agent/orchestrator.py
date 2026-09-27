@@ -23,7 +23,7 @@ from sop_agent.nlu.extractor import Extractor
 from sop_agent.nlu.schema import NLUResult, QuestionKind
 from sop_agent.nlu.selector import ClaimSelector
 from sop_agent.observability.logging import get_logger
-from sop_agent.observability.trace import TraceSink, TurnTrace
+from sop_agent.observability.trace import LLMCallRecord, TraceSink, TurnTrace
 from sop_agent.postprocess.writer import SummaryWriter
 from sop_agent.sop import templates
 from sop_agent.sop.directive import ActionKind, ActionResult, Event, EventType, Observations, TurnDirective
@@ -76,6 +76,7 @@ class _Reply:
     text: str
     fallback_used: bool
     violations: list[Violation] = field(default_factory=list)
+    llm_calls: list[LLMCallRecord] = field(default_factory=list)
 
 
 class Orchestrator:
@@ -181,8 +182,10 @@ class Orchestrator:
         self, state: SessionState, directive: TurnDirective, grounding: Grounding, responder: Responder
     ) -> _Reply:
         """Respond, guard, regenerate once on a violation, else the fallback. Nothing gets through unchecked."""
+        calls: list[LLMCallRecord] = []
         try:
             draft = await responder.respond(state, directive, grounding)
+            calls += draft.llm_calls
             violations = self._guard.check(
                 draft.text, self._guard_context(state, directive, grounding, draft.tool_results_text)
             )
@@ -190,18 +193,19 @@ class Orchestrator:
             if violations:
                 rules = sorted({v.rule.value for v in violations})
                 draft = await responder.respond(state, directive, grounding, guard_notes=rules)
+                calls += draft.llm_calls
                 self._record_tools(state, draft)
                 second = self._guard.check(
                     draft.text, self._guard_context(state, directive, grounding, draft.tool_results_text)
                 )
                 if second:
-                    return _Reply(directive.fallback_reply, True, violations + second)
+                    return _Reply(directive.fallback_reply, True, violations + second, calls)
             if not draft.text:
-                return _Reply(directive.fallback_reply, True, violations)
-            return _Reply(draft.text, False, violations)
+                return _Reply(directive.fallback_reply, True, violations, calls)
+            return _Reply(draft.text, False, violations, calls)
         except Exception:  # noqa: BLE001 - INV-8: any responder or guard failure must fail closed
             _log.exception("responder failed; using fallback")
-            return _Reply(directive.fallback_reply, True)
+            return _Reply(directive.fallback_reply, True, llm_calls=calls)
 
     def _guard_context(
         self, state: SessionState, directive: TurnDirective, grounding: Grounding, tool_text: str
@@ -263,8 +267,14 @@ class Orchestrator:
                 events=[e.model_dump(mode="json") for e in state.events if e.turn == turn],
                 directive=directive.model_dump(mode="json"),
                 actions=[{"kind": r.action.kind.value, "ok": r.ok} for r in results],
+                tool_calls=[
+                    {**e.data, "denied": e.type is EventType.TOOL_DENIED}
+                    for e in state.events
+                    if e.turn == turn and e.type in (EventType.TOOL_CALLED, EventType.TOOL_DENIED)
+                ],
                 guard=[{"rule": v.rule.value, "kind": v.kind} for v in reply.violations],
                 fallback_used=reply.fallback_used,
+                llm_calls=reply.llm_calls,
                 latency_ms=int((time.perf_counter() - started) * 1000),
             )
         )

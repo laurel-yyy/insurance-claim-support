@@ -65,3 +65,22 @@ class MemoryTraceSink:
 
     def record(self, trace: TurnTrace) -> None:
         self.traces.append(trace.masked())
+
+
+class LatestTraceSink:
+    """Keeps each session's latest masked trace for the DebugView, and forwards every trace to `inner`."""
+
+    def __init__(self, inner: TraceSink | None = None) -> None:
+        self._inner = inner
+        self._latest: dict[str, dict[str, Any]] = {}
+
+    def record(self, trace: TurnTrace) -> None:
+        self._latest[trace.session_id] = trace.masked()
+        if self._inner is not None:
+            self._inner.record(trace)
+
+    def latest(self, session_id: str) -> dict[str, Any] | None:
+        return self._latest.get(session_id)
+
+    def forget(self, session_id: str) -> None:
+        self._latest.pop(session_id, None)
