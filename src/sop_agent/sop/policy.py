@@ -12,6 +12,7 @@ from sop_agent.nlu.schema import NLUResult
 from sop_agent.sop import templates
 from sop_agent.sop.directive import (
     ActionKind,
+    ActionResult,
     Observations,
     PendingQuestionKind,
     PlannedAction,
@@ -20,7 +21,7 @@ from sop_agent.sop.directive import (
 )
 from sop_agent.sop.handlers.base import Handler, Parts, PolicyConfig, StepResult, TurnContext, ask
 from sop_agent.sop.handlers.common import Decorations, apply_global_rules
-from sop_agent.sop.handlers.post_process import PostProcessHandler
+from sop_agent.sop.handlers.post_process import PostProcessHandler, settle_send
 from sop_agent.sop.handlers.process_case import ProcessCaseHandler
 from sop_agent.sop.handlers.resolve_intent import ResolveIntentHandler
 from sop_agent.sop.handlers.terminal import TerminalHandler, escalated_parts
@@ -84,6 +85,35 @@ class PolicyEngine:
             new.counters.negative_emotion_streak = 0
         self._apply_offer(new, ctx, outcome.decorations, parts)
         return self._decision(new, parts, outcome.decorations, actions, start)
+
+    def settle(self, state: SessionState, results: list[ActionResult]) -> PolicyDecision | None:
+        """Finish a turn whose outcome depends on an executed action (D38). Pure, like decide().
+
+        Only the summary email needs this: success ends the session, a failure stays in POST_PROCESS and
+        offers a retry. Returns None when nothing needs settling, so the original directive stands.
+        """
+        sent = [r for r in results if r.action.kind is ActionKind.SEND_SUMMARY_EMAIL]
+        if not sent or state.phase is not Phase.POST_PROCESS:
+            return None
+        new = state.model_copy(deep=True)
+        turn = new.counters.turn_index
+        start = next((i for i, e in enumerate(new.events) if e.turn == turn), len(new.events))
+        ctx = TurnContext(
+            nlu=NLUResult(),
+            observations=Observations(),
+            repo=self._repo,
+            cfg=self._config,
+            turn=turn,
+            origin_phase=Phase.POST_PROCESS,
+            pending=None,
+        )
+        new.pending_question = None
+        result = settle_send(new, ctx, sent[-1].action, sent[-1].ok)
+        parts = result.parts
+        if result.next_phase is not None:
+            new = transition(new, result.next_phase)
+            parts = HANDLERS[new.phase].step(new, ctx, entering=True).parts
+        return self._decision(new, parts, Decorations(), [], start)
 
     def _run_handlers(
         self, state: SessionState, ctx: TurnContext

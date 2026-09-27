@@ -4,10 +4,18 @@ from sop_agent.data.repository import InMemoryRepository
 from sop_agent.domain.enums import CallerRole, ClaimStatus, Path, Phase, VerifiedAs
 from sop_agent.memory.state import SessionState
 from sop_agent.nlu.schema import Confirmation, DialogAct, IntentScore, QuestionKind, Scope
-from sop_agent.sop.directive import ActionKind, EventType, PendingQuestionKind
+from sop_agent.sop.directive import (
+    ActionKind,
+    ActionResult,
+    Event,
+    EventType,
+    PendingQuestionKind,
+    PlannedAction,
+    PolicyDecision,
+)
 from sop_agent.sop.policy import PolicyEngine
 from tests.builders import new_state, nlu
-from tests.policy_helpers import engine, no, question, turn, types, verified, yes
+from tests.policy_helpers import check_directive, engine, no, question, turn, types, verified, yes
 
 FILE_ADDRESS = "margaret@email.com"
 
@@ -30,7 +38,7 @@ def test_c1_offer_targets_file_address_kept_out_of_the_directive(snapshot_repo: 
     pending = state.pending_question
     assert pending is not None and pending.kind is PendingQuestionKind.OFFER_SUMMARY_EMAIL
     assert pending.payload["target"] == FILE_ADDRESS
-    assert pending.on_yes is not None and pending.on_yes.params == {"to": FILE_ADDRESS}
+    assert pending.on_yes is not None and pending.on_yes.params["to"] == FILE_ADDRESS
 
 
 def test_c1_directive_never_contains_the_raw_address(snapshot_repo: InMemoryRepository) -> None:
@@ -42,15 +50,95 @@ def test_c1_directive_never_contains_the_raw_address(snapshot_repo: InMemoryRepo
     assert decision.directive.quick_replies == ["Send the summary", "No thanks", "Use a different email"]
 
 
-def test_c2_explicit_yes_sends_to_file_address_and_ends(snapshot_repo: InMemoryRepository) -> None:
+def _send(eng: PolicyEngine, repo: InMemoryRepository, state: SessionState) -> PolicyDecision:
+    decision = turn(eng, repo, state, yes())
+    [action] = decision.actions
+    assert action.kind is ActionKind.SEND_SUMMARY_EMAIL
+    return decision
+
+
+def _settle(
+    eng: PolicyEngine, repo: InMemoryRepository, decision: PolicyDecision, ok: bool
+) -> PolicyDecision:
+    """Stand-in for the executor (M4): record the result event, then let the policy settle the turn."""
+    state = decision.state.model_copy(deep=True)
+    kind = EventType.EMAIL_SENT if ok else EventType.ACTION_FAILED
+    state.events.append(Event(type=kind, turn=state.counters.turn_index, phase=state.phase))
+    settled = eng.settle(state, [ActionResult(action=decision.actions[0], ok=ok)])
+    assert settled is not None
+    check_directive(settled, repo)
+    return settled
+
+
+def test_c2_explicit_yes_plans_the_send_and_stays_until_the_result(snapshot_repo: InMemoryRepository) -> None:
     eng, state = _offered(snapshot_repo)
-    decision = turn(eng, snapshot_repo, state, yes())
-    assert [(a.kind, a.params) for a in decision.actions] == [
-        (ActionKind.SEND_SUMMARY_EMAIL, {"to": FILE_ADDRESS})
-    ]
-    assert decision.state.phase is Phase.ENDED
-    assert EventType.SESSION_ENDED in types(decision)
-    assert any("If events include EMAIL_SENT" in m for m in decision.directive.must)
+    decision = _send(eng, snapshot_repo, state)
+    assert decision.actions[0].params["to"] == FILE_ADDRESS
+    assert decision.state.phase is Phase.POST_PROCESS
+    assert EventType.SESSION_ENDED not in types(decision)
+
+
+def test_c2_successful_send_ends_the_session(snapshot_repo: InMemoryRepository) -> None:
+    eng, state = _offered(snapshot_repo)
+    settled = _settle(eng, snapshot_repo, _send(eng, snapshot_repo, state), ok=True)
+    assert settled.state.phase is Phase.ENDED
+    kinds = types(settled)
+    assert EventType.EMAIL_SENT in kinds and EventType.SESSION_ENDED in kinds
+    assert settled.directive.phase is Phase.ENDED
+    assert any("EMAIL_SENT is in events" in m for m in settled.directive.must)
+
+
+def test_d38_failed_send_stays_in_post_process_and_offers_a_retry(snapshot_repo: InMemoryRepository) -> None:
+    eng, state = _offered(snapshot_repo)
+    failed = _settle(eng, snapshot_repo, _send(eng, snapshot_repo, state), ok=False)
+    assert failed.state.phase is Phase.POST_PROCESS
+    assert EventType.SESSION_ENDED not in types(failed)
+    pending = failed.state.pending_question
+    assert pending is not None and pending.kind is PendingQuestionKind.OFFER_SUMMARY_EMAIL
+    assert pending.payload["target"] == FILE_ADDRESS
+    assert (
+        failed.directive.fallback_reply
+        == "I wasn't able to send the email just now. Would you like me to try again, or skip it?"
+    )
+    assert "Try again" in failed.directive.quick_replies
+    retry = _send(eng, snapshot_repo, failed.state)
+    assert retry.actions[0].params["send_failures"] == 1
+    assert _settle(eng, snapshot_repo, retry, ok=True).state.phase is Phase.ENDED
+
+
+def test_d38_second_failure_skips_the_email_and_ends(snapshot_repo: InMemoryRepository) -> None:
+    eng, state = _offered(snapshot_repo)
+    failed = _settle(eng, snapshot_repo, _send(eng, snapshot_repo, state), ok=False)
+    again = _settle(eng, snapshot_repo, _send(eng, snapshot_repo, failed.state), ok=False)
+    assert again.state.phase is Phase.ENDED
+    skipped = next(e for e in again.events if e.type is EventType.EMAIL_SKIPPED)
+    assert skipped.data == {"reason": "send_failed"}
+    assert "member portal" in again.directive.fallback_reply
+
+
+def test_d38_no_after_a_failed_send_skips(snapshot_repo: InMemoryRepository) -> None:
+    eng, state = _offered(snapshot_repo)
+    failed = _settle(eng, snapshot_repo, _send(eng, snapshot_repo, state), ok=False)
+    decision = turn(eng, snapshot_repo, failed.state, no())
+    assert decision.actions == [] and decision.state.phase is Phase.ENDED
+
+
+def test_d38_failed_send_to_alternate_address_retries_the_same_address(
+    snapshot_repo: InMemoryRepository,
+) -> None:
+    eng, state = _offered(snapshot_repo)
+    alt = turn(eng, snapshot_repo, state, nlu(summary_email="mchen@work.com"))
+    failed = _settle(eng, snapshot_repo, _send(eng, snapshot_repo, alt.state), ok=False)
+    pending = failed.state.pending_question
+    assert pending is not None and pending.kind is PendingQuestionKind.CONFIRM_ALT_EMAIL
+    assert pending.payload["target"] == "mchen@work.com"
+
+
+def test_settle_ignores_turns_without_a_send(snapshot_repo: InMemoryRepository) -> None:
+    eng, state = _offered(snapshot_repo)
+    transfer = PlannedAction(kind=ActionKind.TRANSFER_TO_LIVE_AGENT)
+    assert eng.settle(state, [ActionResult(action=transfer, ok=True)]) is None
+    assert eng.settle(state, []) is None
 
 
 def test_c3_explicit_no_skips_and_ends(snapshot_repo: InMemoryRepository) -> None:
@@ -83,7 +171,7 @@ def test_c4_new_address_needs_a_second_confirmation(snapshot_repo: InMemoryRepos
     assert pending.payload["target"] == "mchen@work.com"
     assert "mchen@work.com" in alt.directive.fallback_reply
     sent = turn(eng, snapshot_repo, alt.state, yes())
-    assert [a.params for a in sent.actions] == [{"to": "mchen@work.com"}]
+    assert [a.params["to"] for a in sent.actions] == ["mchen@work.com"]
 
 
 def test_c4_no_to_the_new_address_offers_the_file_address_again(snapshot_repo: InMemoryRepository) -> None:

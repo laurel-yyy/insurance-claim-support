@@ -182,8 +182,8 @@ Each entry: context, decision, consequence.
   directive tells the responder to report success only if the matching event (`EMAIL_SENT`, `ESCALATED`,
   `CONSENT_REQUESTED`) is present. On `ACTION_FAILED`, M4 uses `templates.ACTION_FAILURE_TEMPLATES`. The consent
   request is different: the state moves to *pending* only when the executor confirms the request was sent.
-- **Consequence**: A reply never claims a side effect that didn't happen. A failed email still ends the session,
-  with the failure told to the caller.
+- **Consequence**: A reply never claims a side effect that didn't happen.
+- **Amended by D38**: the summary email no longer ends the session before the result is known.
 
 ## D26. General and process questions are answered in place
 - **Context**: `general_insurance_question` needs no claim.
@@ -268,3 +268,19 @@ Each entry: context, decision, consequence.
 - **Decision**: The global offer replaces the handler's pending question for that turn; the handler re-asks next
   turn.
 - **Consequence**: The escalation path is never hidden behind another question.
+
+## D38. A failed summary email stays in POST_PROCESS and offers a retry
+- **Context**: Reviewed after M2: ending the session when the send fails left the caller with no way to get the
+  summary. The policy is pure and runs before the executor, so it can't know the result in `decide()`.
+- **Decision**: A yes to the offer plans `SEND_SUMMARY_EMAIL` and stays in POST_PROCESS. After the executor runs,
+  the orchestrator (M4) calls `PolicyEngine.settle(state, [ActionResult(...)])`, which is also pure:
+  - success → ENDED with the closing directive (`SESSION_ENDED`);
+  - failure → stays in POST_PROCESS, says the email couldn't be sent and re-offers it to the same address (the
+    file address or the confirmed alternate), with quick replies `Try again` / `No thanks`. A retry needs a new
+    explicit yes (INV-6);
+  - a second failure in a row → `EMAIL_SKIPPED(reason=send_failed)` → ENDED, pointing to the member portal, so the
+    session can't loop.
+  `settle()` returns None when no email was sent that turn, and the original directive stands. The retry limit
+  (2 attempts) isn't in the spec; it's the conservative choice.
+- **Consequence**: M4's orchestrator must call `settle()` after `executor.run()` whenever the decision planned a
+  send, and use the settled directive. SPEC.md is not edited; this entry is the record.

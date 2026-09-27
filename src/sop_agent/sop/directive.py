@@ -87,6 +87,14 @@ class PlannedAction(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
 
 
+class ActionResult(BaseModel):
+    """What the executor reports back for one planned action, so the policy can settle the turn (D38)."""
+
+    action: PlannedAction
+    ok: bool
+    detail: str = ""
+
+
 class PendingQuestionKind(StrEnum):
     """Yes/no-style questions whose answer only the asking phase may consume (§7.4)."""
 

@@ -35,6 +35,7 @@ class QuickReply(StrEnum):
     LIVE_AGENT = "Talk to a live representative"
     CONTINUE_HERE = "Continue here"
     YES_SEND_REQUEST = "Yes, send the request"
+    TRY_AGAIN = "Try again"
 
 
 def join_labels(labels: Sequence[str]) -> str:
@@ -124,6 +125,14 @@ EMAIL_REP_CANNOT_SWITCH = (
 )
 EMAIL_INVALID = "That email address doesn't look complete. Could you share the full address?"
 EMAIL_SENT_CLOSING = "Thanks for calling. Take care."
+EMAIL_SENDING = "One moment while I send the summary."
+EMAIL_SEND_FAILED_RETRY = (
+    "I wasn't able to send the email just now. Would you like me to try again, or skip it?"
+)
+EMAIL_SEND_FAILED_CLOSING = (
+    "I still wasn't able to send the email, so I'll skip it for now; you can find the details in the member "
+    "portal later. Thanks for calling."
+)
 EMAIL_SKIPPED_CLOSING = "No problem, I won't send it. Thanks for calling, and take care."
 EMAIL_VAGUE_SKIPPED = (
     "I'll skip the email for now; you can find the details in the member portal later. Thanks for calling."

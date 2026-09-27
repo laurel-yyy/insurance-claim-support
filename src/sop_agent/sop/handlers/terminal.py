@@ -28,15 +28,22 @@ def escalated_parts(state: SessionState, reason: EscalationReason) -> Parts:
 def _ended_parts(state: SessionState, ctx: TurnContext) -> Parts:
     skipped = [e for e in state.events if e.turn == ctx.turn and e.type is EventType.EMAIL_SKIPPED]
     if skipped:
-        vague = skipped[-1].data.get("reason") == SkipReason.VAGUE
-        fallback = templates.EMAIL_VAGUE_SKIPPED if vague else templates.EMAIL_SKIPPED_CLOSING
+        reason = str(skipped[-1].data.get("reason", ""))
+        portal = reason in (SkipReason.VAGUE, SkipReason.SEND_FAILED)
+        closings: dict[str, str] = {
+            SkipReason.VAGUE: templates.EMAIL_VAGUE_SKIPPED,
+            SkipReason.SEND_FAILED: templates.EMAIL_SEND_FAILED_CLOSING,
+        }
+        fallback = closings.get(reason, templates.EMAIL_SKIPPED_CLOSING)
         must = ["Close warmly and briefly; the email won't be sent."]
-        if vague:
+        if reason == SkipReason.SEND_FAILED:
+            must.insert(0, "Say the email still couldn't be sent, so it's skipped for now.")
+        if portal:
             must.append("Mention they can find the details in the member portal later.")
     else:
         fallback = templates.EMAIL_SENT_CLOSING
         must = [
-            "If events include EMAIL_SENT, confirm the summary was sent; otherwise say it couldn't be sent.",
+            "Confirm the summary was sent (EMAIL_SENT is in events).",
             "Close warmly and briefly.",
         ]
     return Parts(

@@ -17,6 +17,7 @@ from sop_agent.sop.resolver import PATH_MIN_CONFIDENCE
 from sop_agent.sop.templates import QuickReply
 
 VAGUE_LIMIT = 2
+SEND_FAILURE_LIMIT = 2
 EMAIL_KINDS = (PendingQuestionKind.OFFER_SUMMARY_EMAIL, PendingQuestionKind.CONFIRM_ALT_EMAIL)
 MUST_NOT = ["Say the email was sent unless EMAIL_SENT is in events."]
 
@@ -26,6 +27,7 @@ class SkipReason(StrEnum):
 
     DECLINED = "declined"
     VAGUE = "vague"
+    SEND_FAILED = "send_failed"
 
 
 class PostProcessHandler:
@@ -53,9 +55,17 @@ def _file_address(state: SessionState, ctx: TurnContext) -> str:
 
 
 def _ask_send(
-    state: SessionState, ctx: TurnContext, kind: PendingQuestionKind, to: str, unclear: int = 0
+    state: SessionState,
+    ctx: TurnContext,
+    kind: PendingQuestionKind,
+    to: str,
+    unclear: int = 0,
+    failures: int = 0,
 ) -> None:
-    action = PlannedAction(kind=ActionKind.SEND_SUMMARY_EMAIL, params={"to": to})
+    action = PlannedAction(
+        kind=ActionKind.SEND_SUMMARY_EMAIL,
+        params={"to": to, "offer_kind": kind.value, "send_failures": failures},
+    )
     ask(state, ctx, kind, on_yes=action, target=to)
     if state.pending_question is not None:
         state.pending_question.unclear_replies = unclear
@@ -124,7 +134,8 @@ def _alternate_address(state: SessionState, ctx: TurnContext, raw: str) -> Parts
 def _answer(state: SessionState, ctx: TurnContext, pending: PendingQuestion) -> StepResult:
     answer = ctx.answer(pending.kind, Phase.POST_PROCESS)
     if answer is Confirmation.YES and pending.on_yes is not None:
-        return StepResult(parts=Parts(), next_phase=Phase.ENDED, actions=[pending.on_yes])  # C2
+        # C2: stay in POST_PROCESS until the executor reports the result; PolicyEngine.settle() finishes (D38)
+        return StepResult(parts=_sending_parts(), actions=[pending.on_yes])
     if answer is Confirmation.NO:
         if pending.kind is PendingQuestionKind.CONFIRM_ALT_EMAIL:
             return StepResult(parts=_offer(state, ctx))
@@ -143,6 +154,43 @@ def _answer(state: SessionState, ctx: TurnContext, pending: PendingQuestion) -> 
         return StepResult(parts=_reask(state, ctx, pending, pending.unclear_replies, must))
     return StepResult(
         parts=_reask(state, ctx, pending, pending.unclear_replies, "Ask again whether to send it.")
+    )
+
+
+def _sending_parts() -> Parts:
+    """Provisional parts; always replaced by settle_send() once the executor reports back."""
+    return Parts(
+        must=["Report the email result exactly as the events say."],
+        must_not=list(MUST_NOT),
+        resume_anchor="sending the summary email",
+        fallback_reply=templates.EMAIL_SENDING,
+    )
+
+
+def settle_send(state: SessionState, ctx: TurnContext, action: PlannedAction, ok: bool) -> StepResult:
+    """After the send: success ends the session; a failure stays here and offers a retry (D38)."""
+    if ok:
+        return StepResult(parts=Parts(), next_phase=Phase.ENDED)
+    failures = int(action.params.get("send_failures", 0)) + 1
+    if failures >= SEND_FAILURE_LIMIT:
+        emit(state, ctx, EventType.EMAIL_SKIPPED, reason=SkipReason.SEND_FAILED)
+        return StepResult(parts=Parts(), next_phase=Phase.ENDED)
+    kind = PendingQuestionKind(
+        str(action.params.get("offer_kind", PendingQuestionKind.OFFER_SUMMARY_EMAIL.value))
+    )
+    target = str(action.params.get("to", ""))
+    _ask_send(state, ctx, kind, target, failures=failures)
+    return StepResult(
+        parts=Parts(
+            must=[
+                "Say the email couldn't be sent just now (the ACTION_FAILED event); never imply it was sent.",
+                "Ask whether to try again or skip it.",
+            ],
+            must_not=list(MUST_NOT),
+            quick_replies=[QuickReply.TRY_AGAIN.value, QuickReply.NO_THANKS.value],
+            resume_anchor="retry the summary email",
+            fallback_reply=templates.EMAIL_SEND_FAILED_RETRY,
+        )
     )
 
 
