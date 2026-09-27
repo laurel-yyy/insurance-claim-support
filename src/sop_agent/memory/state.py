@@ -198,13 +198,21 @@ class HandoffTicket(BaseModel):
     created_at: datetime
 
 
+class DraftSource(StrEnum):
+    """Who wrote the draft: the SummaryWriter, or the deterministic template fallback (§8.4.2)."""
+
+    LLM = "llm"
+    TEMPLATE = "template"
+
+
 class EmailDraft(BaseModel):
-    """Summary email draft; the generator arrives in M5."""
+    """Summary email draft (§8.4). Content doesn't depend on `to`, so a confirmed new address reuses it."""
 
     to: str
     subject: str
     text: str
     html: str = ""
+    generated_by: DraftSource = DraftSource.TEMPLATE
 
 
 class SessionSettings(BaseModel):

@@ -18,14 +18,23 @@ from sop_agent.llm.base import LLMRequest, LLMResponse
 from sop_agent.llm.fake import FakeLLMClient, ScriptItem
 from sop_agent.nlu.wire import NLUWireBase, PathOrNone, SelectorWire
 from sop_agent.observability.trace import MemoryTraceSink
+from sop_agent.postprocess.summary import EmailContent, SummaryFacts, template_content
 from tests.nlu_helpers import wire_payload
 
 SAFE_REPLY = "Thanks, I can help with that."
+FACTS_PREFIX = "FACTS:\n"
 ResponderFn = Callable[[LLMRequest], ScriptItem]
 
 
 def _safe(_: LLMRequest) -> ScriptItem:
     return LLMResponse(text=SAFE_REPLY)
+
+
+def faithful_summary(request: LLMRequest) -> ScriptItem:
+    """A well-behaved SummaryWriter: restates the FACTS it was given (so the LLM path is exercised)."""
+    facts = SummaryFacts.model_validate_json(str(request.messages[-1].content).removeprefix(FACTS_PREFIX))
+    content = template_content(facts).model_copy(update={"greeting": f"Hi {facts.addressee},"})
+    return LLMResponse(text=content.model_dump_json(), parsed=content)
 
 
 @dataclass
@@ -37,6 +46,7 @@ class Harness:
     nlu_queue: list[dict[str, Any] | Exception] = field(default_factory=list)
     selector_queue: list[SelectorWire] = field(default_factory=list)
     responder: ResponderFn = _safe
+    summary: ResponderFn = faithful_summary
     turn_requests: list[list[LLMRequest]] = field(default_factory=list)
     caller_texts: list[str] = field(default_factory=list)
     session_id: str = ""
@@ -63,6 +73,8 @@ class Harness:
                 return item
             parsed = model.model_validate(wire_payload(**item))
             return LLMResponse(text=parsed.model_dump_json(), parsed=parsed)
+        if model is EmailContent:
+            return self.summary(request)
         if model is SelectorWire:
             return (
                 self.selector_queue.pop(0)

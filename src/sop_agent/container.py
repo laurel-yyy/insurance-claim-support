@@ -21,7 +21,8 @@ from sop_agent.nlu.extractor import Extractor
 from sop_agent.nlu.selector import ClaimSelector
 from sop_agent.observability.logging import get_logger
 from sop_agent.observability.trace import JsonlTraceWriter, TraceSink
-from sop_agent.postprocess.summary import BasicSummaryDrafter
+from sop_agent.postprocess.summary import TemplateDrafter
+from sop_agent.postprocess.writer import SummaryWriter
 from sop_agent.sop.emotion import EmotionConfig
 from sop_agent.sop.handlers.base import PolicyConfig
 from sop_agent.sop.phases import PHASES
@@ -37,6 +38,7 @@ from sop_agent.tools.registry import ToolRegistry
 EXTRACTOR_PROMPT = "extractor.md"
 SELECTOR_PROMPT = "selector.md"
 RESPONDER_PROMPT = "responder_system.md"
+SUMMARY_PROMPT = "summary.md"
 
 _log = get_logger(__name__)
 
@@ -46,6 +48,7 @@ class Prompts:
     extractor: str
     selector: str
     responder: ResponderPrompts
+    summary: str
 
 
 @dataclass(frozen=True)
@@ -123,8 +126,23 @@ class Container:
             max_rounds=s.tool_loop_max_rounds,
         )
 
+    def make_summary_writer(self, llm: LLMClient) -> SummaryWriter:
+        return SummaryWriter(
+            llm,
+            self.settings.responder_model,
+            self.prompts.summary,
+            self.repository,
+            OutputGuard(self.services.index),
+            self.settings.company_name,
+        )
+
     def make_agents(self, llm: LLMClient) -> Agents:
-        return Agents(self.make_extractor(llm), self.make_selector(llm), self.make_responder(llm))
+        return Agents(
+            self.make_extractor(llm),
+            self.make_selector(llm),
+            self.make_responder(llm),
+            self.make_summary_writer(llm),
+        )
 
     def make_orchestrator(self, agents: Agents, tracer: TraceSink | None = None) -> Orchestrator:
         """One orchestrator for the server key (M6 adds per-session keys via `agents_for`)."""
@@ -135,7 +153,7 @@ class Container:
             consent=services.consent,
             outbox=services.outbox,
             handoff=services.handoff,
-            drafter=BasicSummaryDrafter(self.repository, s.company_name),
+            drafter=TemplateDrafter(self.repository, s.company_name),
         )
         return Orchestrator(
             store=services.store,
@@ -159,6 +177,7 @@ def load_prompts() -> Prompts:
         extractor=load_prompt(EXTRACTOR_PROMPT),
         selector=load_prompt(SELECTOR_PROMPT),
         responder=ResponderPrompts(system=load_prompt(RESPONDER_PROMPT), phases=phases),
+        summary=load_prompt(SUMMARY_PROMPT),
     )
 
 

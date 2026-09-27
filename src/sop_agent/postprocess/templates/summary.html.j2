@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<body style="font-family: sans-serif; color: #1C2B33;">
+<p>{{ greeting }}</p>
+<h3>What we discussed</h3>
+<ul>{% for item in discussed %}<li>{{ item }}</li>{% endfor %}</ul>
+{% if outcomes %}<h3>Claim status and outcome</h3>
+<ul>{% for item in outcomes %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+{% if next_steps %}<h3>Next steps</h3>
+<ul>{% for item in next_steps %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+{% if claim_numbers %}<p>Reference: {{ claim_numbers | join(", ") }}</p>{% endif %}
+<p>{{ closing }}</p>
+</body>
+</html>

@@ -91,9 +91,11 @@ class ActionExecutor:
         representative = state.memory.representative.caller_role is CallerRole.AUTHORIZED_REPRESENTATIVE
         if representative and to != normalize_email(holder.email):
             raise PreconditionError("representatives can only use the address on file")
-        if state.email_draft is None or state.email_draft.to != to:
+        if state.email_draft is None:  # Normally drafted on entering POST_PROCESS; never send without one
             state.email_draft = self.drafter.draft(state, to)
-            _emit(state, EventType.SUMMARY_DRAFTED)
+            _emit(state, EventType.SUMMARY_DRAFTED, generated_by=state.email_draft.generated_by.value)
+        elif state.email_draft.to != to:  # C4: same content, confirmed new recipient
+            state.email_draft = state.email_draft.model_copy(update={"to": to})
         draft = state.email_draft
         record = self.outbox.send(
             state.session_id, to, draft.subject, draft.text, draft.html, self.clock.now()

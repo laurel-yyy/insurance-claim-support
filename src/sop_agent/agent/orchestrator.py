@@ -20,10 +20,11 @@ from sop_agent.memory.merge import mark_deferred_answered
 from sop_agent.memory.state import ChatRole, ChatTurn, SessionSettings, SessionState
 from sop_agent.memory.store import SessionStore
 from sop_agent.nlu.extractor import Extractor
-from sop_agent.nlu.schema import NLUResult
+from sop_agent.nlu.schema import NLUResult, QuestionKind
 from sop_agent.nlu.selector import ClaimSelector
 from sop_agent.observability.logging import get_logger
 from sop_agent.observability.trace import TraceSink, TurnTrace
+from sop_agent.postprocess.writer import SummaryWriter
 from sop_agent.sop import templates
 from sop_agent.sop.directive import ActionKind, ActionResult, Event, EventType, Observations, TurnDirective
 from sop_agent.sop.phases import TERMINAL_PHASES
@@ -47,6 +48,7 @@ class Agents:
     extractor: Extractor
     selector: ClaimSelector
     responder: Responder
+    summary: SummaryWriter
 
 
 @dataclass
@@ -138,12 +140,14 @@ class Orchestrator:
             decision = self._policy.decide(state, nlu, observations)
             state, results = self._executor.run(decision.actions, decision.state)
             state, directive = self._settle(state, decision.directive, results)
+            state = await self._ensure_draft(state, agents.summary)
+            directive = directive.model_copy(update={"events": [e for e in state.events if e.turn == turn]})
             grounding = self._context.build(state, directive)
             if phase_before in TERMINAL_PHASES:  # Fixed copy; no LLM call (§8.5)
                 reply = _Reply(directive.fallback_reply, fallback_used=False)
             else:
                 reply = await self._reply(state, directive, grounding, agents.responder)
-            state = self._finish(state, directive, reply, turn)
+            state = self._finish(state, directive, reply, turn, nlu)
             self._store.put(state)
             self._trace(state, phase_before, nlu, observations, directive, results, reply, started)
             return self._result(state, directive, reply, turn)
@@ -156,14 +160,22 @@ class Orchestrator:
         if settled is not None:
             state, directive = settled.state, settled.directive
         failed = [r for r in results if not r.ok and r.action.kind is not ActionKind.SEND_SUMMARY_EMAIL]
-        updates: dict[str, object] = {
-            "events": [e for e in state.events if e.turn == state.counters.turn_index]
-        }
+        updates: dict[str, object] = {}
         if failed:
             notes = " ".join(templates.ACTION_FAILURE_TEMPLATES[r.action.kind] for r in failed)
             updates["fallback_reply"] = f"{notes} {directive.fallback_reply}"
             updates["must"] = [f"Say plainly: {notes}", *directive.must]
         return state, directive.model_copy(update=updates)
+
+    async def _ensure_draft(self, state: SessionState, writer: SummaryWriter) -> SessionState:
+        """C1: entering POST_PROCESS drafts the summary once, so the offer and C5 can use it (D52)."""
+        if state.phase is not Phase.POST_PROCESS or state.email_draft is not None:
+            return state
+        pending = state.pending_question
+        target = str(pending.payload.get("target", "")) if pending else ""
+        state.email_draft = await writer.draft(state, target)
+        _append(state, EventType.SUMMARY_DRAFTED, generated_by=state.email_draft.generated_by.value)
+        return state
 
     async def _reply(
         self, state: SessionState, directive: TurnDirective, grounding: Grounding, responder: Responder
@@ -214,14 +226,16 @@ class Orchestrator:
                     state.memory.case_log.discussed_case_ids.append(case_id)
 
     def _finish(
-        self, state: SessionState, directive: TurnDirective, reply: _Reply, turn: int
+        self, state: SessionState, directive: TurnDirective, reply: _Reply, turn: int, nlu: NLUResult
     ) -> SessionState:
         for violation in reply.violations:
             _append(state, EventType.GUARD_BLOCKED, rule=violation.rule.value, token_kind=violation.kind)
         if reply.fallback_used:
             _append(state, EventType.LLM_FALLBACK, component=RESPONDER_COMPONENT)
-        elif state.phase is Phase.PROCESS_CASE and directive.answer_now:
-            state = mark_deferred_answered(state)
+        else:
+            if state.phase is Phase.PROCESS_CASE and directive.answer_now:
+                state = mark_deferred_answered(_record_deferred(state))
+            state = _record_questions(state, nlu)
         state.history.append(ChatTurn(role=ChatRole.AGENT, text=reply.text, turn=turn))
         return state
 
@@ -268,6 +282,27 @@ class Orchestrator:
             phase_trail=trail,
             fallback_used=reply.fallback_used,
         )
+
+
+def _record_questions(state: SessionState, nlu: NLUResult) -> SessionState:
+    """What was discussed (§8.4.1): the caller's questions answered after verification (D54)."""
+    if state.memory.identity.status is not IdentityStatus.VERIFIED:
+        return state
+    log = state.memory.case_log
+    for question in nlu.questions:
+        text = question.text.strip()
+        if text and question.kind is not QuestionKind.OUT_OF_SCOPE and text not in log.questions_answered:
+            log.questions_answered.append(text)
+    return state
+
+
+def _record_deferred(state: SessionState) -> SessionState:
+    """Deferred questions answered this turn also count as discussed, once."""
+    log = state.memory.case_log
+    for question in state.memory.deferred_questions:
+        if not question.answered and question.text not in log.questions_answered:
+            log.questions_answered.append(question.text)
+    return state
 
 
 def _append(state: SessionState, kind: EventType, **data: object) -> None:

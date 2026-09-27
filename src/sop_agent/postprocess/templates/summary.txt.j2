@@ -1,0 +1,14 @@
+{{ greeting }}
+
+What we discussed:
+{% for item in discussed %}- {{ item }}
+{% endfor %}{% if outcomes %}
+Claim status and outcome:
+{% for item in outcomes %}- {{ item }}
+{% endfor %}{% endif %}{% if next_steps %}
+Next steps:
+{% for item in next_steps %}- {{ item }}
+{% endfor %}{% endif %}{% if claim_numbers %}
+Reference: {{ claim_numbers | join(", ") }}
+{% endif %}
+{{ closing }}

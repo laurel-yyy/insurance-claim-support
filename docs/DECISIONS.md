@@ -360,6 +360,7 @@ Each entry: context, decision, consequence.
   deterministic draft from the case log and claim data (claims discussed, follow-ups; no ID numbers, DOB or phone).
   The executor drafts on send if there's no draft for that address. M5 replaces the drafter behind the protocol.
 - **Consequence**: The full Margaret flow works end to end now.
+- **Superseded in M5 (D52)**: `BasicSummaryDrafter` is gone; the executor's fallback is `TemplateDrafter`.
 
 ## D48. Tool results and the discussed-claims log
 - **Context**: §8.3.2 adds the claim IDs a tool touched to `case_log.discussed_case_ids`.
@@ -403,3 +404,38 @@ Each entry: context, decision, consequence.
   matching event this turn. Policyholder DOBs aren't indexed (§12.1 doesn't list them); G3 blocks echoes of the
   caller's own DOB, ID digits and phone.
 - **Consequence**: Violations record only the rule and token kind, never the text.
+
+## D52. The summary is drafted by the orchestrator on entering POST_PROCESS
+- **Context**: C1 generates the draft before the offer, but the SummaryWriter is an async LLM call and the policy
+  must stay pure.
+- **Decision**: After decide/execute/settle, if the session is in POST_PROCESS with no draft, the orchestrator
+  calls `SummaryWriter.draft()` and emits `SUMMARY_DRAFTED {generated_by}`. The draft is grounded through the
+  SUMMARY_DRAFT scope, so C5 ("what's in it?") works. C7 clears it, so re-entering POST_PROCESS drafts again. The
+  executor sends the stored draft and, only if none exists, builds a `TemplateDrafter` draft, so a send never fails
+  for lack of a draft.
+- **Consequence**: One writer call per POST_PROCESS entry; later turns in the phase reuse the draft.
+
+## D53. Draft content doesn't depend on the recipient
+- **Context**: C4 lets a policyholder confirm a different address.
+- **Decision**: Switching to a confirmed address copies the draft with a new `to`; the content is not rewritten.
+  `EmailDraft.generated_by` (`llm` or `template`) records who wrote it, for the trace and the M6 inspector.
+- **Consequence**: What the caller was offered is exactly what gets sent.
+
+## D54. "What was discussed" is recorded after each answered turn
+- **Context**: §8.4.1's "what was discussed" needs the caller's questions; `case_log.questions_answered` was
+  never filled.
+- **Decision**: After each non-fallback reply once the caller is verified, the orchestrator records that turn's
+  questions (except out-of-scope ones). Deferred questions answered when PROCESS_CASE starts are recorded once.
+- **Consequence**: The summary lists what the caller asked, in their own words; questions answered by a fallback
+  reply aren't claimed as discussed.
+
+## D55. Summary facts, guard and template details
+- **Context**: §8.4.1-§8.4.2.
+- **Decision**: `SummaryFacts` holds the addressee, call date, questions, one outcome per discussed claim (the
+  verified caller's own only), follow-ups, successfully executed actions (a failed transfer isn't reported) and
+  claim numbers. Amounts appear only for closed claims (amount paid, maximum allowed) and open claims (expected
+  reimbursement, labelled as an estimate); dates are written out ("March 18, 2026"). The writer's draft is checked
+  by the OutputGuard with the facts as the only grounding: G4 (amounts and dates from the facts), G2 (no other
+  policyholder's data) and G3 (no DOB, ID digits or phone). Any violation or LLM failure uses the template content.
+  The subject is always set by code to the §8.4.1 format. HTML is autoescaped; text is plain.
+- **Consequence**: The email can't contain facts the conversation didn't establish.

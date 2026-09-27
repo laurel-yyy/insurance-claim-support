@@ -9,7 +9,7 @@ from sop_agent.data.repository import InMemoryRepository
 from sop_agent.domain.clock import FixedClock
 from sop_agent.domain.enums import AuthorizationStatus, CallerRole, ConsentStatus, EscalationReason, Phase
 from sop_agent.memory.state import SessionState
-from sop_agent.postprocess.summary import BasicSummaryDrafter
+from sop_agent.postprocess.summary import TemplateDrafter
 from sop_agent.sop.directive import ActionKind, EventType, PlannedAction
 from sop_agent.tools.consent import ScenarioConsentService
 from sop_agent.tools.email import MockOutbox
@@ -27,7 +27,7 @@ def _executor(repo: InMemoryRepository, tmp_path: Path) -> ActionExecutor:
         consent=ScenarioConsentService(repo, sms_dir=tmp_path / "sms"),
         outbox=MockOutbox(tmp_path / "outbox"),
         handoff=LiveAgentHandoff(tmp_path / "handoffs"),
-        drafter=BasicSummaryDrafter(repo, "Northwind Insurance"),
+        drafter=TemplateDrafter(repo, "Northwind Insurance"),
     )
 
 
