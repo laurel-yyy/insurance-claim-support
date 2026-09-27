@@ -1,6 +1,5 @@
-"""One real Extractor call (SPEC §17 M3). Skipped unless ANTHROPIC_API_KEY is set; run with `make live`."""
+"""One real Extractor call (SPEC §17 M3). Skipped unless ANTHROPIC_API_KEY is set (env or .env)."""
 
-import os
 from datetime import date
 
 import pytest
@@ -22,7 +21,7 @@ MARGARET = (
 async def test_live_extractor_reads_the_brief_sentence() -> None:
     settings = Settings(fixtures_dir=SNAPSHOT_DIR, demo_today=date(2026, 3, 10))
     container = Container.build(settings)
-    extractor = container.make_extractor(container.make_llm(os.environ.get("ANTHROPIC_API_KEY")))
+    extractor = container.make_extractor(container.make_llm())  # server key from the environment or .env
     result = await extractor.extract(MARGARET, new_state())
     assert not result.degraded, "the live extractor call failed and fell back to regex"
     assert result.identity[IdentityField.FULL_NAME].raw.casefold() == "margaret chen"

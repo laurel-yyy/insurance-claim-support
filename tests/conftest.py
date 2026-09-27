@@ -1,7 +1,6 @@
-import os
-
 import pytest
 
+from sop_agent.config import Settings
 from sop_agent.data.repository import InMemoryRepository
 from tests.helpers import merged_repository, snapshot_repository
 
@@ -17,7 +16,7 @@ def merged_repo() -> InMemoryRepository:
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    if os.environ.get("ANTHROPIC_API_KEY"):
+    if Settings().llm_configured:  # ANTHROPIC_API_KEY from the environment or .env
         return
     skip_live = pytest.mark.skip(reason="ANTHROPIC_API_KEY not set")
     for item in items:
