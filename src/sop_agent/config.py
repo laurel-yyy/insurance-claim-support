@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     session_ttl_minutes: int = 120
     max_sessions: int = 500
     log_level: str = "INFO"
+    var_dir: Path = Path("var")  # Runtime artifacts: outbox/, sms/, traces/, handoffs/ (gitignored)
 
     @field_validator("anthropic_api_key", "responder_effort", "demo_today", mode="before")
     @classmethod

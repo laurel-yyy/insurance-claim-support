@@ -100,7 +100,7 @@ def _dob_parts(text: str) -> tuple[int, int, int] | None:
 
 
 def normalize_phone(raw: str) -> str | None:
-    """Ten digits; a leading country code 1 on an 11-digit number is dropped (+16505212836 -> 6505212836)."""
+    """Ten digits; a leading country code 1 on an 11-digit number is dropped (+15550100199 -> 5550100199)."""
     digits = re.sub(r"\D", "", raw)
     if len(digits) == PHONE_DIGITS + 1 and digits.startswith("1"):
         digits = digits[1:]

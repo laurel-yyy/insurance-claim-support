@@ -10,6 +10,7 @@ dependencies = [
     "jinja2>=3.1",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
+    "pyyaml>=6.0",
     "uvicorn[standard]>=0.32",
 ]
 
@@ -20,6 +21,7 @@ dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "ruff>=0.8",
+    "types-pyyaml>=6.0",
 ]
 
 [build-system]

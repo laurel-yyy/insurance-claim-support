@@ -341,3 +341,65 @@ Each entry: context, decision, consequence.
   entered in the UI (M6).
 - **Consequence**: No record data enters extractor requests before verification; agent replies in the history
   have passed the output guard (M4).
+
+## D45. Minimal session store in M4
+- **Context**: The orchestrator needs a store and a per-session lock (§11.4); the full store is M6.
+- **Decision**: `memory/store.py` has a `SessionStore` protocol and `InMemorySessionStore` (deep copies in and
+  out, one `asyncio.Lock` per session). TTL and the session cap come in M6.
+- **Consequence**: Concurrent requests for one session are serialized already.
+
+## D46. PyYAML dependency
+- **Context**: §10.4 renders the directive as YAML; M7's eval scenarios are YAML.
+- **Decision**: Added `pyyaml` (and `types-pyyaml` for mypy). The directive is rendered with `yaml.safe_dump`,
+  without `fallback_reply` and the grounding request (the model doesn't need them).
+- **Consequence**: One small, standard dependency; no hand-written YAML.
+
+## D47. Basic summary drafter until M5
+- **Context**: §15.2's end-to-end test needs an email in the outbox; SummaryFacts/SummaryWriter are M5.
+- **Decision**: `postprocess/summary.py` defines a `SummaryDrafter` protocol and `BasicSummaryDrafter`, a
+  deterministic draft from the case log and claim data (claims discussed, follow-ups; no ID numbers, DOB or phone).
+  The executor drafts on send if there's no draft for that address. M5 replaces the drafter behind the protocol.
+- **Consequence**: The full Margaret flow works end to end now.
+
+## D48. Tool results and the discussed-claims log
+- **Context**: §8.3.2 adds the claim IDs a tool touched to `case_log.discussed_case_ids`.
+- **Decision**: Only single-claim tools (`get_claim`, `get_document_guidance`, `get_followup_guidance`) record
+  their claim; `list_claims` records none. Tool calls produce `TOOL_CALLED` or `TOOL_DENIED` events. A `party_id`
+  argument sent by the model is dropped before the tool runs.
+- **Consequence**: The summary email lists the claims actually discussed, not every claim on file.
+
+## D49. The final request after the tool-round limit carries tool results as data
+- **Context**: §10.4.5 says to make one more request without tools after the limit. A request whose messages
+  contain `tool_use`/`tool_result` blocks but defines no tools would likely be rejected by the API.
+- **Decision**: The final request uses the original conversation (no tool blocks) and adds the tool results to
+  the system prompt as `<tool_results>` JSON. Inside the loop, the assistant's raw content blocks (thinking
+  included) are appended verbatim before the tool results, in one user message (§10.2).
+- **Consequence**: The model still sees everything it looked up; G4 checks numbers against the same results.
+
+## D50. Orchestrator details
+- **Context**: §11.4 leaves the wiring details open.
+- **Decision**:
+  - Step 3.5 (observe) lives in `agent/observer.py`: consent is polled only while a request is pending; the
+    ClaimSelector runs only while a CHOOSE_CLAIM question is open, with the verified caller's own candidates.
+  - The consent service keeps each request's position in the status sequence, keyed by request ID (decision 4
+    of the M4 plan).
+  - After the executor, `PolicyEngine.settle()` finishes email turns (D38); any other failed action puts its
+    failure template in front of the fallback and adds a "say plainly" instruction. The directive's events are
+    refreshed so the responder and G5 see executor events.
+  - Terminal phases answer with the fixed copy and make no LLM calls.
+  - Deferred questions are marked answered only after a non-fallback PROCESS_CASE reply (D30).
+  - The guard runs on every reply; a violation regenerates once with a note naming only the rule; a second
+    violation or an empty reply uses the fallback. Any exception in the responder or guard fails closed (INV-8).
+  - `VAR_DIR` (default `var`) is a new setting for runtime files (outbox, sms, traces, handoffs).
+  - `Container.make_orchestrator(agents)` binds one set of LLM components; M6 adds per-session keys.
+- **Consequence**: One turn is traceable end to end in `var/traces/{session_id}.jsonl`, masked.
+
+## D51. Guard details
+- **Context**: §12.1-§12.2.
+- **Decision**: Text is scanned by extracting candidate tokens in canonical form (amounts as decimals, dates as
+  ISO or month-day, phones as 10 digits, IDs upper-cased, names as token sequences) and looking them up in the
+  index. A yearless date ("January 12") is allowed before verification only if the caller said that day. G5 is
+  implemented (the spec marks it optional): "I've sent/emailed/texted/transferred" and "has been sent" need the
+  matching event this turn. Policyholder DOBs aren't indexed (§12.1 doesn't list them); G3 blocks echoes of the
+  caller's own DOB, ID digits and phone.
+- **Consequence**: Violations record only the rule and token kind, never the text.
