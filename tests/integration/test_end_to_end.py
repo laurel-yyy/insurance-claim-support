@@ -1,4 +1,4 @@
-"""End-to-end flows with FakeLLMClient (SPEC §15.2): Margaret, representatives, INV-2 scan, fault injection."""
+"""End-to-end flows with FakeLLMClient: Margaret, representatives, INV-2 scan, fault injection."""
 
 import json
 from pathlib import Path

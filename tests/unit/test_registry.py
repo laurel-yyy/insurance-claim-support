@@ -1,4 +1,4 @@
-"""ToolRegistry: phase whitelist, ownership and the no-party_id rule (SPEC §11.1-§11.2, INV-4)."""
+"""ToolRegistry: phase whitelist, ownership and the no-party_id rule (INV-4)."""
 
 import json
 from datetime import date

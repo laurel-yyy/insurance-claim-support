@@ -1,4 +1,4 @@
-"""The LLM-facing schemas stay inside the §10.2 structured-output rules and limits."""
+"""The LLM-facing schemas stay inside the structured-output rules and limits."""
 
 import json
 from collections.abc import Iterator
@@ -77,8 +77,8 @@ def test_schema_complexity_stays_within_api_limits(repo: InMemoryRepository) -> 
     assert (optional, unions) == (0, 0)  # the design goal is stricter than the limit
 
 
-def test_strict_tool_limit_constant_matches_spec() -> None:
-    assert MAX_STRICT_TOOLS == 20  # tool schemas arrive in M4; the same checks will run on them
+def test_strict_tool_limit_constant_matches_the_api_limit() -> None:
+    assert MAX_STRICT_TOOLS == 20  # The API allows at most 20 strict tools per request
 
 
 def test_enum_values_are_lowercase(repo: InMemoryRepository) -> None:

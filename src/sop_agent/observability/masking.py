@@ -1,4 +1,4 @@
-"""PII masking shared by logs, traces and debug views (SPEC §16, INV-9).
+"""PII masking shared by logs, traces and debug views (INV-9).
 
 DOB -> ••••-••-••, ID number -> ••••, phone -> •••-•••-••36, email -> m•••••••@email.com, API keys never appear.
 """

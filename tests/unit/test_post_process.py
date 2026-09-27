@@ -1,4 +1,4 @@
-"""The summary email consent gate (SPEC §8.4.3, C1-C8, INV-6)."""
+"""The summary email consent gate (C1-C8, INV-6)."""
 
 from sop_agent.data.repository import InMemoryRepository
 from sop_agent.domain.enums import CallerRole, ClaimStatus, Path, Phase, VerifiedAs
@@ -60,7 +60,7 @@ def _send(eng: PolicyEngine, repo: InMemoryRepository, state: SessionState) -> P
 def _settle(
     eng: PolicyEngine, repo: InMemoryRepository, decision: PolicyDecision, ok: bool
 ) -> PolicyDecision:
-    """Stand-in for the executor (M4): record the result event, then let the policy settle the turn."""
+    """Stand-in for the executor: record the result event, then let the policy settle the turn."""
     state = decision.state.model_copy(deep=True)
     kind = EventType.EMAIL_SENT if ok else EventType.ACTION_FAILED
     state.events.append(Event(type=kind, turn=state.counters.turn_index, phase=state.phase))
@@ -240,7 +240,7 @@ def test_c7_new_need_returns_to_resolve_intent_and_consent_is_asked_again(
     need = nlu(
         intents=[IntentScore(path=Path.STATUS_INQUIRY, confidence=0.9)],
         case_type="auto",
-        claim_status=ClaimStatus.OPEN,  # type + status = 4, the §8.2.2 threshold for auto-resolution
+        claim_status=ClaimStatus.OPEN,  # type + status = 4, the auto-resolution threshold
     )
     moved = turn(eng, snapshot_repo, state, need)
     assert moved.state.phase is Phase.PROCESS_CASE

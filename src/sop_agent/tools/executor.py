@@ -1,4 +1,4 @@
-"""ActionExecutor: runs only actions the policy planned after explicit confirmation (SPEC §11.3, INV-5).
+"""ActionExecutor: runs only actions the policy planned after explicit confirmation (INV-5).
 
 Preconditions are re-checked here; a failed check or a failed side effect adds ACTION_FAILED and the result goes
 back to the orchestrator (and to PolicyEngine.settle for emails). It never reports success it didn't achieve.

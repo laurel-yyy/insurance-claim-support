@@ -1,4 +1,4 @@
-"""Post-call email summary (SPEC §8.4.1-§8.4.2).
+"""Post-call email summary.
 
 SummaryFacts are built by code only, from the case log, the discussed claims and executed actions. The
 SummaryWriter (LLM) may only rephrase them; its draft is guarded (G2-G4 against the facts) and falls back to a
@@ -65,7 +65,7 @@ class SummaryFacts(BaseModel):
 
 
 class EmailContent(BaseModel):
-    """What the writer fills (§8.4.2). All fields required; the wire schema for structured output."""
+    """What the writer fills. All fields required; the wire schema for structured output."""
 
     subject: str
     greeting: str
@@ -149,7 +149,7 @@ def subject_for(facts: SummaryFacts) -> str:
 
 
 def draft_from(content: EmailContent, facts: SummaryFacts, to: str, source: DraftSource) -> EmailDraft:
-    """Render text and HTML; the subject always follows §8.4.1, whatever the writer produced."""
+    """Render text and HTML; the subject is always the fixed template, whatever the writer produced."""
     content = content.model_copy(update={"subject": subject_for(facts)})
     text, html = render_email(content.model_dump(), facts.claim_numbers)
     return EmailDraft(to=to, subject=content.subject, text=text, html=html, generated_by=source)

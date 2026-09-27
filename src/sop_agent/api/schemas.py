@@ -1,4 +1,4 @@
-"""Request/response DTOs for the HTTP API (SPEC §13.1). No response ever contains an API key."""
+"""Request/response DTOs for the HTTP API. No response ever contains an API key."""
 
 from datetime import date, datetime
 from typing import Any
@@ -32,7 +32,7 @@ class MessageRequest(BaseModel):
 
 
 class DebugView(BaseModel):
-    """Everything the Inspector shows, fully masked (§13.1)."""
+    """Everything the Inspector shows, fully masked."""
 
     phase: str
     verify_stage: str | None

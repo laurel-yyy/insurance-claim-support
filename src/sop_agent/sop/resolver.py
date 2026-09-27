@@ -1,4 +1,4 @@
-"""Claim scoring, resolution and path inference (SPEC §8.2.2-§8.2.5).
+"""Claim scoring, resolution and path inference.
 
 Scores only the verified policyholder's own claims; callers pass them in, so ownership is decided upstream.
 A contradiction penalty applies only to a hint the caller actually stated.
@@ -69,7 +69,7 @@ def canonical_case_type(value: str) -> str:
 
 
 def status_from_word(word: str) -> ClaimStatus | None:
-    """Map what callers say ("settled", "in progress") to a status (§6.2.5)."""
+    """Map what callers say ("settled", "in progress") to a status."""
     return STATUS_SYNONYMS.get(" ".join(word.strip().casefold().split()))
 
 
@@ -131,7 +131,7 @@ def _keyword_overlap(keywords: Iterable[str], claim: Claim) -> float:
 
 
 class ResolutionMode(StrEnum):
-    """How a claim was selected; AUTO means the reply must name it so the caller can correct it (§8.2.5)."""
+    """How a claim was selected; AUTO means the reply must name it so the caller can correct it."""
 
     AUTO = "auto"
     CHOSEN = "chosen"
@@ -170,7 +170,7 @@ def rank(claims: Sequence[Claim], hints: CaseHints, today: date) -> list[ScoredC
 
 
 def resolve(claims: Sequence[Claim], hints: CaseHints, excluded: set[str], today: date) -> Resolution:
-    """§8.2.2 decision: unique high confidence, ambiguous candidates, or no match."""
+    """Decision: unique high confidence, ambiguous candidates, or no match."""
     pool = [c for c in claims if c.case_id not in excluded]
     if not pool:
         return NoClaims()
@@ -188,7 +188,7 @@ def resolve(claims: Sequence[Claim], hints: CaseHints, excluded: set[str], today
 
 
 def infer_path(intents: Iterable[IntentCandidate], claim: Claim) -> Path:
-    """§8.2.4: the most confident claim-related intent (≥ 0.6), else a default from the claim status."""
+    """The most confident claim-related intent (≥ 0.6), else a default from the claim status."""
     confident = [i for i in intents if i.path in PATHS_NEEDING_CLAIM and i.confidence >= PATH_MIN_CONFIDENCE]
     if confident:
         return max(confident, key=lambda i: (i.confidence, i.last_turn)).path
@@ -196,7 +196,7 @@ def infer_path(intents: Iterable[IntentCandidate], claim: Claim) -> Path:
 
 
 def contradicts(claim: Claim, case_id: str | None, case_type: str | None, status: ClaimStatus | None) -> bool:
-    """Do hints stated this turn point away from the selected claim (§8.2.5 claim switching)?"""
+    """Do hints stated this turn point away from the selected claim (claim switching)?"""
     if case_id and case_id.strip().upper() != claim.case_id.upper():
         return True
     if case_type and canonical_case_type(case_type) != canonical_case_type(claim.case_type):

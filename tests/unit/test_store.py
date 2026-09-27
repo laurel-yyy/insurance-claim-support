@@ -1,4 +1,4 @@
-"""SessionStore: TTL, cap and eviction order, eviction hooks, per-session locks (SPEC §13.1)."""
+"""SessionStore: TTL, cap and eviction order, eviction hooks, per-session locks."""
 
 import asyncio
 

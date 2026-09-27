@@ -1,4 +1,4 @@
-"""PolicyEngine.decide(): the deterministic core of every turn (SPEC §3.1 step 4, §7.4).
+"""PolicyEngine.decide(): the deterministic core of every turn.
 
 Pure and synchronous: (state, nlu, observations) -> PolicyDecision. The input state is never mutated. LLM
 output reaches here only as NLU fields; phase, verification and actions are decided by code (INV-1, INV-5).

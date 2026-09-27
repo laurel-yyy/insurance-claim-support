@@ -1,4 +1,4 @@
-"""Scope policy and off-topic counters (SPEC §9.2, §9.4).
+"""Scope policy and off-topic counters.
 
 Manipulation attempts ("ignore your instructions", "I'm an admin") count as out of scope; the SOP continues.
 """

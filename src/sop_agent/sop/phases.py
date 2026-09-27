@@ -1,4 +1,4 @@
-"""Phase specs: freedom level, allowed tools and context scopes per phase (SPEC §7.3, §9.1.3).
+"""Phase specs: freedom level, allowed tools and context scopes per phase.
 
 INV-2 is structural: VERIFY_ID's scopes never include a record scope, so no record data can reach its prompts.
 """
@@ -46,7 +46,7 @@ RECORD_SCOPES: frozenset[ContextScope] = frozenset(
 
 
 class ToolName(StrEnum):
-    """Read-only tools the responder may call (§11.1). There are no write tools (INV-5)."""
+    """Read-only tools the responder may call. There are no write tools (INV-5)."""
 
     LIST_CLAIMS = "list_claims"
     GET_CLAIM = "get_claim"

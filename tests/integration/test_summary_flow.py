@@ -1,4 +1,4 @@
-"""Summary email wired end to end (SPEC §8.4): draft on entry, send the draft, C4 reuse, C7 re-draft."""
+"""Summary email wired end to end: draft on entry, send the draft, C4 reuse, C7 re-draft."""
 
 from pathlib import Path
 

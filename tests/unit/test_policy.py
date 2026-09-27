@@ -467,7 +467,7 @@ def test_persuasion_is_not_counted_after_verification(snapshot_repo: InMemoryRep
     assert state.phase is Phase.PROCESS_CASE
 
 
-# --- Extraction notes (M3) --------------------------------------------------------------------------------
+# --- Extraction notes -------------------------------------------------------------------------------------
 
 
 def test_degraded_extraction_emits_llm_fallback_and_asks_to_rephrase(

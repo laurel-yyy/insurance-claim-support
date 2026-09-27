@@ -1,4 +1,4 @@
-"""SessionStore: in-memory sessions with a per-session lock, TTL and a session cap (SPEC §11.4, §13.1).
+"""SessionStore: in-memory sessions with a per-session lock, TTL and a session cap.
 
 Requests for one session are serialized. Sessions expire after `ttl_seconds` without activity (monotonic clock,
 not the demo date). At the cap, expired sessions are evicted first, then the least recently used.

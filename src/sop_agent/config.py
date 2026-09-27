@@ -1,4 +1,4 @@
-"""Application settings (SPEC §14.1), read from the environment and an optional .env file."""
+"""Application settings, read from the environment and an optional .env file."""
 
 from datetime import date
 from pathlib import Path
@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     @field_validator("anthropic_api_key", "responder_effort", "demo_today", mode="before")
     @classmethod
     def _empty_means_unset(cls, value: object) -> object:
-        """Trim whitespace, and treat an empty value as "not set": DEMO_TODAY= selects the real date (§14.1).
+        """Trim whitespace, and treat an empty value as "not set": DEMO_TODAY= selects the real date.
 
         Trimming matters for `docker run --env-file`, which passes `KEY= value` through verbatim.
         """

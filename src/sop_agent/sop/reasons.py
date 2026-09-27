@@ -1,4 +1,4 @@
-"""Why each SOP step matters (SPEC §9.3.3).
+"""Why each SOP step matters.
 
 Directives reference these by key; the responder may reword a reason but must not change its meaning.
 """

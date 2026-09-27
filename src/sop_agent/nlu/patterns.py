@@ -1,4 +1,4 @@
-"""High-precision regex pre-extraction (SPEC §10.3.2). Deterministic; runs before and without the LLM.
+"""High-precision regex pre-extraction. Deterministic; runs before and without the LLM.
 
 Only formats that are unambiguous in text are taken: emails, 10-11 digit phones, policy and claim IDs, and a DOB
 or ID last four only when a cue ("DOB", "born", "last four", "SSN", ...) precedes it. Values are normalized.

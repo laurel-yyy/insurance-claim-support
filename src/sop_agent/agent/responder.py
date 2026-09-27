@@ -1,4 +1,4 @@
-"""Responder: turns the directive and grounding into one reply, with the read-only tool loop (SPEC §10.4).
+"""Responder: turns the directive and grounding into one reply, with the read-only tool loop.
 
 Prompt layers: global system prompt, phase instructions, <directive> (YAML), <grounding> (JSON). Caller messages
 are always user messages, never spliced into the system prompt. Tools are offered only where the phase allows.
@@ -209,7 +209,7 @@ def _record(model: str, started: float, response: LLMResponse | None) -> LLMCall
 
 
 def _effort(value: str | None) -> Effort | None:
-    """RESPONDER_EFFORT, sent only when configured to a supported level (§10.2)."""
+    """RESPONDER_EFFORT, sent only when configured to a supported level."""
     for level in get_args(Effort):
         if value == level:
             return level  # type: ignore[no-any-return]

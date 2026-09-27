@@ -1,4 +1,4 @@
-"""ActionExecutor and the mock services (SPEC §11.3, INV-5)."""
+"""ActionExecutor and the mock services (INV-5)."""
 
 from datetime import date
 from pathlib import Path

@@ -28,7 +28,7 @@ def test_every_phase_has_a_spec() -> None:
     assert all(spec.phase is phase for phase, spec in PHASES.items())
 
 
-def test_read_scopes_match_spec_table() -> None:
+def test_read_scopes_match_the_scope_table() -> None:
     always = {S.SOP_STATUS, S.USER_STATED_HINTS}
     assert PHASES[Phase.VERIFY_ID].context_scopes == always | {S.GENERAL_KB}
     assert PHASES[Phase.RESOLVE_INTENT].context_scopes == always | {
@@ -51,7 +51,7 @@ def test_read_scopes_match_spec_table() -> None:
     }
 
 
-def test_tool_whitelists_match_spec() -> None:
+def test_tool_whitelists_match_the_expected_table() -> None:
     assert PHASES[Phase.RESOLVE_INTENT].allowed_tools == {ToolName.LIST_CLAIMS}
     assert PHASES[Phase.PROCESS_CASE].allowed_tools == set(ToolName)
     for phase in (Phase.VERIFY_ID, Phase.POST_PROCESS, Phase.ESCALATED, Phase.ENDED):

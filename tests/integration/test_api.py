@@ -1,4 +1,4 @@
-"""HTTP API with FakeLLMClient (SPEC §13.1): the Margaret flow, keys, masking, errors and static files."""
+"""HTTP API with FakeLLMClient: the Margaret flow, keys, masking, errors and static files."""
 
 import json
 import logging

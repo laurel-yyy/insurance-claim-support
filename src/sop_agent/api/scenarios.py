@@ -1,4 +1,4 @@
-"""Scenario scripts for the UI's Play/Step (SPEC §13.1, §15.3). Read from SCENARIOS_DIR/*.yaml."""
+"""Scenario scripts for the UI's Play/Step. Read from SCENARIOS_DIR/*.yaml."""
 
 from pathlib import Path
 from typing import Any

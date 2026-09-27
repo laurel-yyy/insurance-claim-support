@@ -1,4 +1,4 @@
-"""End-to-end harness: the real container and orchestrator with one FakeLLMClient (SPEC §15.2).
+"""End-to-end harness: the real container and orchestrator with one FakeLLMClient.
 
 Requests are routed by what they ask for: extractor requests (NLU wire schema) get the next scripted NLU payload,
 selector requests the next selector answer, and responder requests the scripted reply function.

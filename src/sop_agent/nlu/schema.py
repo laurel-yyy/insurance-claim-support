@@ -1,4 +1,4 @@
-"""NLU domain format (SPEC §10.3.1).
+"""NLU domain format.
 
 `NLUResult` is what memory merge and the policy consume: optional fields, where None or empty means "not
 mentioned". Identity values stay raw here; memory merge re-normalizes them (code never trusts LLM formatting).
@@ -14,7 +14,7 @@ from sop_agent.domain.enums import CallerRole, ClaimStatus, EmotionLabel, Identi
 
 
 class ValueSource(StrEnum):
-    """Which extractor produced a value (§3.1 steps 1-2)."""
+    """Which extractor produced a value."""
 
     REGEX = "regex"
     LLM = "llm"
@@ -57,7 +57,7 @@ class Confirmation(StrEnum):
 
 
 class QuestionKind(StrEnum):
-    """Whether answering needs record data. A language judgment, so the Extractor labels it (§9.1.2)."""
+    """Whether answering needs record data. A language judgment, so the Extractor labels it."""
 
     ACCOUNT = "account"
     GENERAL = "general"
@@ -119,5 +119,5 @@ class NLUResult(BaseModel):
     manipulation_attempt: bool = False
     abusive: bool = False
     safety_concern: bool = False
-    degraded: bool = False  # The LLM failed; regex-only extraction (§10.3.2)
+    degraded: bool = False  # The LLM failed; regex-only extraction
     conflicts: list[str] = Field(default_factory=list)  # Format fields where regex and LLM disagreed

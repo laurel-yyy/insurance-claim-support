@@ -1,4 +1,4 @@
-"""Frozen domain models built from the fixture files (SPEC §6.3)."""
+"""Frozen domain models built from the fixture files."""
 
 from collections.abc import Mapping
 from datetime import date
@@ -14,7 +14,7 @@ class _Frozen(BaseModel):
 
 
 class Policyholder(_Frozen):
-    """Account holder. Aliases exist because the data comes from an audio demo (§6.2.2)."""
+    """Account holder. Aliases exist because the data comes from an audio demo."""
 
     party_id: str
     name: str
@@ -49,7 +49,7 @@ class Claim(_Frozen):
 
 
 class AuthorizedRepresentative(_Frozen):
-    """A third party allowed to call for a policyholder. Not to be confused with a live agent (§6.2.10)."""
+    """A third party allowed to call for a policyholder. Not to be confused with a live agent."""
 
     rep_name: str
     relationship: str
@@ -58,7 +58,7 @@ class AuthorizedRepresentative(_Frozen):
 
 
 class ConsentScenario(_Frozen):
-    """Simulated sequence of real-time consent statuses (§8.1.7 A6)."""
+    """Simulated sequence of real-time consent statuses (A6)."""
 
     name: str
     status_sequence: tuple[str, ...]
@@ -83,7 +83,7 @@ class FollowupTopic(_Frozen):
 
 
 class DocumentGuideline(_Frozen):
-    """Language-resolved document guidance: the main knowledge source for PROCESS_CASE (§8.3)."""
+    """Language-resolved document guidance: the main knowledge source for PROCESS_CASE."""
 
     default_guidance: str
     case_type_guidance: Mapping[str, str]

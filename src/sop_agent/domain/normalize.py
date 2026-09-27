@@ -1,4 +1,4 @@
-"""PII normalization and format validation (SPEC §8.1.1).
+"""PII normalization and format validation.
 
 Every function returns the normalized value, or None when the input fails format validation (V7). Values that
 come from the LLM are always re-run through these functions; the LLM's formatting is never trusted.

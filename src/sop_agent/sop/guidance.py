@@ -1,4 +1,4 @@
-"""Deterministic retrieval and rendering of document guidance and follow-up topics (SPEC §8.3.3, K1-K7).
+"""Deterministic retrieval and rendering of document guidance and follow-up topics (K1-K7).
 
 The LLM only paraphrases what these functions return. Nothing here reads free text from the LLM except the
 topic names and the caller's raw message, which are matched against data-driven lists.

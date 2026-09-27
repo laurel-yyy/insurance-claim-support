@@ -39,7 +39,7 @@ async def test_live_margaret_turn_end_to_end(tmp_path: Path) -> None:
     assert {EventType.VERIFIED, EventType.CLAIM_RESOLVED, EventType.PATH_SELECTED} <= kinds
     assert EventType.LLM_FALLBACK not in kinds, "a model call failed or the guard blocked twice"
     assert not result.fallback_used
-    assert "CL-2048" in result.reply  # §8.2.5: an auto-resolved claim is named so the caller can correct it
+    assert "CL-2048" in result.reply  # An auto-resolved claim is named so the caller can correct it
     assert "4472" not in result.reply and "1985-03-15" not in result.reply  # G3
     other = {h.kind for h in container.services.index.find(result.reply) if "P9" not in h.parties}
     assert other <= {TokenKind.MONTH_DAY}, f"reply mentions another policyholder's data: {other}"

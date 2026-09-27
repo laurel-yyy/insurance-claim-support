@@ -1,4 +1,4 @@
-"""VERIFY_ID, identity sub-stage (SPEC §8.1.2-§8.1.6). STRICT: code decides, the LLM only words it.
+"""VERIFY_ID, identity sub-stage. STRICT: code decides, the LLM only words it.
 
 Replies never say which field failed, never confirm a policy exists and never read back stored values (V3, V9).
 The authorization and consent sub-stages live in verify_rep.py.

@@ -1,4 +1,4 @@
-"""Load and validate the fixtures directory into an InMemoryRepository (SPEC §6.5).
+"""Load and validate the fixtures directory into an InMemoryRepository.
 
 Parsing is tolerant where a swapped dataset could legitimately differ (optional fields, unknown statuses or
 case types, duplicate aliases) and fails fast on structural errors, naming the file and the record.
@@ -329,7 +329,7 @@ def _aliases(rec: Mapping[str, Any], name: str, primary: str, file: str, key: st
 
 
 def _localized(node: Any, language: str, record: str) -> str:
-    """Pick the configured language, falling back to English (§6.2.12)."""
+    """Pick the configured language, falling back to English."""
     if isinstance(node, Mapping):
         for lang in (language, FALLBACK_LANGUAGE):
             value = node.get(lang)

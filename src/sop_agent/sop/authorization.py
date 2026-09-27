@@ -1,4 +1,4 @@
-"""Authorized-representative check (SPEC §8.1.7, A3/A4).
+"""Authorized-representative check (A3/A4).
 
 Runs only after the policyholder's identity passed. The result never reveals whether other representatives
 exist for the account (A4).

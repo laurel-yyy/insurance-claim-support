@@ -1,4 +1,4 @@
-"""What the policy tells the rest of the pipeline each turn (SPEC §7.5).
+"""What the policy tells the rest of the pipeline each turn.
 
 The directive is the only channel from deterministic code to the responder; the LLM never writes one (INV-1).
 """
@@ -96,7 +96,7 @@ class ActionResult(BaseModel):
 
 
 class PendingQuestionKind(StrEnum):
-    """Yes/no-style questions whose answer only the asking phase may consume (§7.4)."""
+    """Yes/no-style questions whose answer only the asking phase may consume."""
 
     CHOOSE_CLAIM = "choose_claim"
     CONFIRM_CONSENT_REQUEST = "confirm_consent_request"
@@ -139,7 +139,7 @@ class DeclineInfo(BaseModel):
 
 
 class EmotionStrategy(StrEnum):
-    """Reply order for an emotion (§9.3.2)."""
+    """Reply order for an emotion."""
 
     ACKNOWLEDGE_EXPLAIN_OFFER_OPTIONS = "acknowledge_explain_offer_options"
     REASSURE_EXPLAIN_NEXT = "reassure_explain_next"
@@ -150,7 +150,7 @@ class EmotionStrategy(StrEnum):
 
 
 class EmotionPlan(BaseModel):
-    """Reply strategy chosen by code for the caller's emotion (§9.3.2)."""
+    """Reply strategy chosen by code for the caller's emotion."""
 
     label: EmotionLabel
     intensity: int
@@ -195,21 +195,21 @@ class TurnDirective(BaseModel):
 
 
 class ConsentObservation(BaseModel):
-    """One poll of the policyholder's consent status (§11.3); `exhausted` means the sequence is used up."""
+    """One poll of the policyholder's consent status; `exhausted` means the sequence is used up."""
 
     status: str
     exhausted: bool = False
 
 
 class SelectorChoice(BaseModel):
-    """ClaimSelector output (§8.2.6). Untrusted: the policy checks it against the candidates."""
+    """ClaimSelector output. Untrusted: the policy checks it against the candidates."""
 
     case_id: str = ""
     path: Path | None = None
 
 
 class Observations(BaseModel):
-    """External status gathered by the orchestrator before decide(), so the policy stays pure (§11.3)."""
+    """External status gathered by the orchestrator before decide(), so the policy stays pure."""
 
     consent: ConsentObservation | None = None
     claim_selection: SelectorChoice | None = None

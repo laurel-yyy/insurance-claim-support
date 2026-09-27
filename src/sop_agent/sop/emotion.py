@@ -1,4 +1,4 @@
-"""Emotion strategies, persuasion budget and escalation rules (SPEC §9.3).
+"""Emotion strategies, persuasion budget and escalation rules.
 
 Code picks the strategy and decides when to stop persuading; the gate itself is never bypassed.
 """
@@ -41,7 +41,7 @@ class EmotionConfig:
 
 
 def plan_emotion(nlu: NLUResult, gate_reason: ReasonKey | None) -> EmotionPlan | None:
-    """§9.3.2: abusive > refusing > the emotion label. Neutral with no refusal needs no plan."""
+    """Abusive > refusing > the emotion label. Neutral with no refusal needs no plan."""
     if nlu.abusive:
         return EmotionPlan(
             label=nlu.emotion, intensity=nlu.emotion_intensity, strategy=EmotionStrategy.CALM_BOUNDARY
@@ -62,7 +62,7 @@ def plan_emotion(nlu: NLUResult, gate_reason: ReasonKey | None) -> EmotionPlan |
 
 
 def is_resisting_gate(nlu: NLUResult) -> bool:
-    """Refusing, insisting ("just tell me"), or clear frustration at the gate (§9.3.4)."""
+    """Refusing, insisting ("just tell me"), or clear frustration at the gate."""
     if DialogAct.REFUSE in nlu.dialog_acts or DialogAct.COMPLAIN in nlu.dialog_acts:
         return True
     return nlu.emotion in RESISTANT_EMOTIONS and nlu.emotion_intensity >= STRONG_INTENSITY
@@ -96,7 +96,7 @@ class EscalationSignals:
 
 
 def escalation_reason(signals: EscalationSignals, cfg: EmotionConfig) -> EscalationReason | None:
-    """§9.3.4 priority order. Lockout (rule 3) is decided by the VERIFY_ID handler after evaluation."""
+    """Priority order. Lockout (rule 3) is decided by the VERIFY_ID handler after evaluation."""
     if signals.safety_concern:
         return EscalationReason.SAFETY
     if signals.requests_live_agent:

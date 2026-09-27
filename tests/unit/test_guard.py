@@ -1,4 +1,4 @@
-"""OutputGuard rules G1-G5 (SPEC §12.2, INV-3)."""
+"""OutputGuard rules G1-G5 (INV-3)."""
 
 import pytest
 

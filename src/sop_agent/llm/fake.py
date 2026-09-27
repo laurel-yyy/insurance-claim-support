@@ -1,4 +1,4 @@
-"""FakeLLMClient: scripted responses plus request recording, for tests and offline runs (SPEC §10.1).
+"""FakeLLMClient: scripted responses plus request recording, for tests and offline runs.
 
 A script item can be an LLMResponse, a parsed BaseModel (wrapped into a response), or an exception to raise.
 A callable script receives each request and returns one of those.

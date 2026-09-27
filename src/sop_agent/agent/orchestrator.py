@@ -1,4 +1,4 @@
-"""Orchestrator: wires one turn together (SPEC §3.1, §11.4).
+"""Orchestrator: wires one turn together.
 
 extract -> observe -> decide (pure) -> execute -> settle -> context -> respond -> guard -> persist + trace.
 Any responder or guard failure gives the directive's deterministic fallback (INV-8); a failed action swaps in its
@@ -43,7 +43,7 @@ _log = get_logger(__name__)
 
 @dataclass(frozen=True)
 class Agents:
-    """LLM-backed components for one session (a session may bring its own API key, M6)."""
+    """LLM-backed components for one session (a session may bring its own API key)."""
 
     extractor: Extractor
     selector: ClaimSelector
@@ -108,7 +108,7 @@ class Orchestrator:
         self._default_scenario = default_consent_scenario
 
     def start_session(self, consent_scenario: str | None = None) -> TurnResult:
-        """Deterministic greeting; no LLM call (§11.4)."""
+        """Deterministic greeting; no LLM call."""
         scenario = consent_scenario or self._default_scenario
         state = SessionState(
             session_id=uuid.uuid4().hex,
@@ -144,7 +144,7 @@ class Orchestrator:
             state = await self._ensure_draft(state, agents.summary)
             directive = directive.model_copy(update={"events": [e for e in state.events if e.turn == turn]})
             grounding = self._context.build(state, directive)
-            if phase_before in TERMINAL_PHASES:  # Fixed copy; no LLM call (§8.5)
+            if phase_before in TERMINAL_PHASES:  # Fixed copy; no LLM call
                 reply = _Reply(directive.fallback_reply, fallback_used=False)
             else:
                 reply = await self._reply(state, directive, grounding, agents.responder)
@@ -295,7 +295,7 @@ class Orchestrator:
 
 
 def _record_questions(state: SessionState, nlu: NLUResult) -> SessionState:
-    """What was discussed (§8.4.1): the caller's questions answered after verification."""
+    """What was discussed: the caller's questions answered after verification."""
     if state.memory.identity.status is not IdentityStatus.VERIFIED:
         return state
     log = state.memory.case_log

@@ -1,4 +1,4 @@
-"""Injected time source. Nothing in sop/ or domain/ may read the system clock directly (§3.2)."""
+"""Injected time source. Nothing in sop/ or domain/ may read the system clock directly."""
 
 from datetime import UTC, date, datetime
 from typing import Protocol
@@ -23,7 +23,7 @@ class SystemClock:
 
 
 class FixedClock:
-    """Pinned date, so the demo data stays internally consistent (§6.2.7) and tests are reproducible.
+    """Pinned date, so the demo data stays internally consistent and tests are reproducible.
 
     `now()` keeps the real time of day on the fixed date, so timestamps still move within a session.
     """

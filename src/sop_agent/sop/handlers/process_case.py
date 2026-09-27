@@ -1,4 +1,4 @@
-"""PROCESS_CASE (SPEC §8.3). GUIDED: the LLM reasons over grounding and read-only tools.
+"""PROCESS_CASE. GUIDED: the LLM reasons over grounding and read-only tools.
 
 Code still decides the path's guidance, which topics to ground, follow-up items, when alternatives are
 exhausted, claim rejection and switching, and completion.
@@ -56,7 +56,7 @@ def _auto_resolved(state: SessionState, case_id: str) -> bool:
 
 
 def _caller_moves_on(state: SessionState, ctx: TurnContext, claim: Claim) -> StepResult | None:
-    """Rejection, a switch to another claim, or being done (§8.2.5, §8.3.8)."""
+    """Rejection, a switch to another claim, or being done."""
     nlu = ctx.nlu
     first_reply = state.counters.turns_in_phase == 1 and ctx.pending is None
     if (
@@ -144,7 +144,7 @@ def _grounding(
 
 
 def _alternatives(state: SessionState, ctx: TurnContext, claim: Claim, parts: Parts) -> bool:
-    """§8.3.7: share alternatives the first time; offer a specialist once they're exhausted."""
+    """Share alternatives the first time; offer a specialist once they're exhausted."""
     log = state.memory.case_log
     newly_shared: list[str] = []
     for mention in ctx.nlu.unavailable_documents:

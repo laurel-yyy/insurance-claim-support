@@ -7,7 +7,7 @@ from enum import StrEnum
 
 
 class Phase(StrEnum):
-    """Top-level SOP phases (SPEC §7.1)."""
+    """Top-level SOP phases."""
 
     VERIFY_ID = "VERIFY_ID"
     RESOLVE_INTENT = "RESOLVE_INTENT"
@@ -18,7 +18,7 @@ class Phase(StrEnum):
 
 
 class VerifyStage(StrEnum):
-    """Sub-stages inside VERIFY_ID; the last two exist only for representative calls (§8.1.7)."""
+    """Sub-stages inside VERIFY_ID; the last two exist only for representative calls."""
 
     IDENTITY = "identity"
     AUTHORIZATION = "authorization"
@@ -26,7 +26,7 @@ class VerifyStage(StrEnum):
 
 
 class Path(StrEnum):
-    """Bounded workflow paths (§8.2.1). The first five match the guideline's intent_hints."""
+    """Bounded workflow paths. The first five match the guideline's intent_hints."""
 
     STATUS_INQUIRY = "status_inquiry"
     DENIAL_QUESTION = "denial_question"
@@ -38,7 +38,7 @@ class Path(StrEnum):
 
 
 class ClaimStatus(StrEnum):
-    """Known claim statuses; anything else maps to OTHER so swapped datasets still load (§6.2.5)."""
+    """Known claim statuses; anything else maps to OTHER so swapped datasets still load."""
 
     OPEN = "open"
     CLOSED = "closed"
@@ -74,7 +74,7 @@ class CallerRole(StrEnum):
 
 
 class EmotionLabel(StrEnum):
-    """Emotion recognized in the latest message (§9.3.1)."""
+    """Emotion recognized in the latest message."""
 
     NEUTRAL = "neutral"
     FRUSTRATED = "frustrated"
@@ -85,7 +85,7 @@ class EmotionLabel(StrEnum):
 
 
 class IdentityStatus(StrEnum):
-    """Verification status. IDENTITY_VERIFIED is the representative flow's midpoint (§7.5)."""
+    """Verification status. IDENTITY_VERIFIED is the representative flow's midpoint."""
 
     UNVERIFIED = "unverified"
     IDENTITY_VERIFIED = "identity_verified"
@@ -120,7 +120,7 @@ class ConsentStatus(StrEnum):
 
 
 class EscalationReason(StrEnum):
-    """Why a session was handed to a live agent (§9.3.4, §8.3.7)."""
+    """Why a session was handed to a live agent."""
 
     SAFETY = "SAFETY"
     CALLER_REQUEST = "CALLER_REQUEST"

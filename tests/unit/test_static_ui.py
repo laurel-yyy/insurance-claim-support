@@ -1,4 +1,4 @@
-"""Static checks on the test UI (SPEC §13.2). Browser behavior is checked manually; see the M6 report."""
+"""Static checks on the test UI. Browser behavior is checked manually."""
 
 import re
 from pathlib import Path

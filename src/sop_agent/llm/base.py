@@ -1,6 +1,6 @@
-"""Provider-agnostic LLM interface (SPEC §10.1). Knows nothing about insurance or the SOP.
+"""Provider-agnostic LLM interface. Knows nothing about insurance or the SOP.
 
-Requests have no fields for sampling parameters or tool_choice, so no caller can send them (§10.2).
+Requests have no fields for sampling parameters or tool_choice, so no caller can send them.
 """
 
 from enum import StrEnum
@@ -22,7 +22,7 @@ class LLMMessage(BaseModel):
 
 
 class ToolSpec(BaseModel):
-    """A read-only tool; every input parameter must be required (strict tools, §10.2)."""
+    """A read-only tool; every input parameter must be required (strict tools)."""
 
     name: str
     description: str
@@ -99,6 +99,6 @@ class LLMClient(Protocol):
 
 
 def ensure_no_prefill(request: LLMRequest) -> None:
-    """Assistant prefill returns a 400 on current models (§10.2); the last message must be the user's."""
+    """Assistant prefill returns a 400 on current models; the last message must be the user's."""
     if not request.messages or request.messages[-1].role is not Role.USER:
         raise ValueError("the last message must be a user message (assistant prefill is not allowed)")

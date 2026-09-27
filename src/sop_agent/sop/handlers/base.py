@@ -1,4 +1,4 @@
-"""Shared types for phase handlers: turn context, directive parts and step results (SPEC §7.4).
+"""Shared types for phase handlers: turn context, directive parts and step results.
 
 Turn-level signals (yes/no, "done", "deny") belong to the phase the turn started in, and a yes/no only to the
 phase that asked. `TurnContext.answer()` enforces that and consumes the answer once.

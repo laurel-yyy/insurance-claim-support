@@ -1,4 +1,4 @@
-"""Identity verification: matching, evaluation, lockout and field suggestions (SPEC §8.1.2-§8.1.4).
+"""Identity verification: matching, evaluation, lockout and field suggestions.
 
 Pure functions over IdentityState and the read-only repository. Nothing here tells the caller which field
 failed or whether a policy exists (V3, V5, V9); `Verified.matched_fields` is for the audit trace only.
@@ -138,7 +138,7 @@ def run_identity_check(
     """Apply V1-V6 to a copy of `identity`.
 
     A policyholder pass completes verification (VERIFIED). A representative pass only confirms the
-    policyholder's identity (IDENTITY_VERIFIED); authorization and consent still follow (§8.1.7).
+    policyholder's identity (IDENTITY_VERIFIED); authorization and consent still follow.
     """
     if identity.status is not IdentityStatus.UNVERIFIED:
         return IdentityCheck(identity=identity, outcome=None)
@@ -181,7 +181,7 @@ def fields_still_needed(identity: IdentityState, cfg: VerifyConfig) -> int:
 
 
 def suggest_fields(identity: IdentityState) -> list[IdentityField]:
-    """§8.1.4: dob, phone, email, id_last4, full_name, skipping provided and declined fields."""
+    """Suggestion order: dob, phone, email, id_last4, full_name, skipping provided and declined fields."""
     provided = identity.valid_values()
     return [f for f in SUGGESTION_ORDER if f not in provided and f not in identity.declined]
 

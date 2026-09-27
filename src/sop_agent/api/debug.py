@@ -1,4 +1,4 @@
-"""Build the masked DebugView the Inspector shows (SPEC §13.1, INV-9).
+"""Build the masked DebugView the Inspector shows (INV-9).
 
 Identity fields appear only as provided/declined/missing. Everything else goes through the shared masking
 function, except the email draft body, which is exactly what the verified caller is offered.

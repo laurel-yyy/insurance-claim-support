@@ -24,7 +24,7 @@ def _verified(phase: Phase = Phase.VERIFY_ID) -> SessionState:
     return state
 
 
-def test_inv7_whitelist_matches_spec() -> None:
+def test_inv7_whitelist_matches_the_expected_table() -> None:
     assert set(WHITELIST) == {
         (Phase.VERIFY_ID, Phase.RESOLVE_INTENT),
         (Phase.VERIFY_ID, Phase.ESCALATED),

@@ -10,7 +10,7 @@ class AmountParseError(DomainError):
 
 
 class DataLoadError(DomainError):
-    """Fixture data is structurally invalid; raised at startup so bad data never reaches a session (§6.5)."""
+    """Fixture data is structurally invalid; raised at startup so bad data never reaches a session."""
 
     def __init__(self, file: str, record: str, reason: str) -> None:
         self.file = file

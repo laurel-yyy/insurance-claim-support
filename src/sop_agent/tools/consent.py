@@ -1,4 +1,4 @@
-"""ScenarioConsentService: simulated real-time policyholder consent (SPEC §8.1.7 A5-A7, §11.3).
+"""ScenarioConsentService: simulated real-time policyholder consent (A5-A7).
 
 Each request or poll consumes one status from the session's scenario; once the sequence is used up, polls keep
 returning the last status with `exhausted=True`. A mock SMS record is written to var/sms/ (phone masked).

@@ -1,4 +1,4 @@
-"""Composition root: the only place that builds and wires services from Settings (§3.2)."""
+"""Composition root: the only place that builds and wires services from Settings."""
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -100,7 +100,7 @@ class Container:
         )
 
     def make_llm(self, api_key: str | None = None) -> LLMClient:
-        """An LLM client for the server key, or for a key a tester entered in the UI (§13.1)."""
+        """An LLM client for the server key, or for a key a tester entered in the UI."""
         key = api_key
         if key is None and self.settings.anthropic_api_key is not None:
             key = self.settings.anthropic_api_key.get_secret_value()
@@ -176,7 +176,7 @@ class Container:
 
 
 class LLMNotConfiguredError(RuntimeError):
-    """No server API key and no key entered for this session (§13.1)."""
+    """No server API key and no key entered for this session."""
 
 
 @dataclass
@@ -235,7 +235,7 @@ def load_prompts() -> Prompts:
 
 
 def _read_faq(path: Path) -> str:
-    """The general FAQ (§6.7). A missing file is a setup error, reported once at startup."""
+    """The general FAQ. A missing file is a setup error, reported once at startup."""
     if not path.is_file():
         _log.warning("faq file not found", extra={"fields": {"path": str(path)}})
         return ""
@@ -243,7 +243,7 @@ def _read_faq(path: Path) -> str:
 
 
 def policy_config(settings: Settings) -> PolicyConfig:
-    """SOP thresholds from configuration (§14.1)."""
+    """SOP thresholds from configuration."""
     return PolicyConfig(
         verify=VerifyConfig(
             min_matches=settings.verify_min_matches, max_failed_attempts=settings.verify_max_failed_attempts

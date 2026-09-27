@@ -1,4 +1,4 @@
-"""ClaimSelector: bounded choice, validated output, candidate IDs only in message content (SPEC §8.2.6)."""
+"""ClaimSelector: bounded choice, validated output, candidate IDs only in message content."""
 
 import json
 

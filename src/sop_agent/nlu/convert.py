@@ -1,4 +1,4 @@
-"""Wire -> domain conversion and the regex/LLM merge (SPEC §10.3.1-§10.3.2).
+"""Wire -> domain conversion and the regex/LLM merge.
 
 Empty wire values become None. For format-type fields, code-normalized regex values win over the LLM; a
 disagreement is recorded in `NLUResult.conflicts` so the policy can emit NLU_CONFLICT.
@@ -116,7 +116,7 @@ def to_domain(wire: NLUWireBase, patterns: PatternResult, today: date, text: str
 
 
 def degraded_result(patterns: PatternResult, text: str) -> NLUResult:
-    """§10.3.2 degraded mode: regex results only; everything else neutral."""
+    """Degraded mode: regex results only; everything else neutral."""
     return NLUResult(
         text=text,
         dialog_acts=[DialogAct.OTHER],

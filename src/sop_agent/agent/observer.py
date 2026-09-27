@@ -1,4 +1,4 @@
-"""Observer: gathers external status before decide() so the policy stays pure (SPEC §3.1 step 3.5, §11.3).
+"""Observer: gathers external status before decide() so the policy stays pure.
 
 Consent is polled only while a request is pending; the ClaimSelector runs only while a CHOOSE_CLAIM question is
 open (so the caller is verified). Failures produce no observation, which the policy treats as "still waiting".

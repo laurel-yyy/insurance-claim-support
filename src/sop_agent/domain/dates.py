@@ -1,4 +1,4 @@
-"""Date hints and deadline status (SPEC §8.2.3, §8.3.5).
+"""Date hints and deadline status.
 
 Code does all date math; the LLM only restates the results (principle 9). Every function takes `today` and
 never reads the system clock.

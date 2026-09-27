@@ -1,4 +1,4 @@
-"""One real Extractor call (SPEC §17 M3). Skipped unless ANTHROPIC_API_KEY is set (env or .env)."""
+"""One real Extractor call. Skipped unless ANTHROPIC_API_KEY is set (env or .env)."""
 
 from datetime import date
 

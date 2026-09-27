@@ -1,4 +1,4 @@
-"""ClaimSelector: a bounded LLM choice among candidate claims (SPEC §8.2.6).
+"""ClaimSelector: a bounded LLM choice among candidate claims.
 
 Called only by the orchestrator while a CHOOSE_CLAIM question is open, so the caller is verified. Candidate IDs go
 in the message content, never in the schema. Output is checked here and again by the policy.

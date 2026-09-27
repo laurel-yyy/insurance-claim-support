@@ -1,4 +1,4 @@
-"""Scenario assertions (SPEC §15.3). Each returns None when it holds, else a short failure message."""
+"""Scenario assertions. Each returns None when it holds, else a short failure message."""
 
 from collections.abc import Callable
 from dataclasses import dataclass

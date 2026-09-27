@@ -1,4 +1,4 @@
-"""LiveAgentHandoff: creates the ticket a live agent receives (SPEC §8.5), written to var/handoffs/."""
+"""LiveAgentHandoff: creates the ticket a live agent receives, written to var/handoffs/."""
 
 import json
 import uuid

@@ -1,4 +1,4 @@
-"""SummaryFacts, the template fallback, rendering and the SummaryWriter (SPEC §8.4.1-§8.4.2)."""
+"""SummaryFacts, the template fallback, rendering and the SummaryWriter."""
 
 from datetime import date
 from typing import Any
@@ -90,7 +90,7 @@ def test_template_draft_renders_every_section(snapshot_repo: InMemoryRepository)
         assert secret not in draft.text and secret not in draft.html
 
 
-def test_html_is_escaped_and_subject_is_always_the_spec_format(snapshot_repo: InMemoryRepository) -> None:
+def test_html_is_escaped_and_subject_is_always_the_fixed_format(snapshot_repo: InMemoryRepository) -> None:
     facts = build_facts(_margaret_state(), snapshot_repo, COMPANY)
     content = template_content(facts).model_copy(
         update={"subject": "Anything", "discussed": ["<script>alert(1)</script>"]}

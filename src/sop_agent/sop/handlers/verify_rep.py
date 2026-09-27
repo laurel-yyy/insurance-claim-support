@@ -1,4 +1,4 @@
-"""VERIFY_ID for authorized representatives: authorization then real-time consent (SPEC §8.1.7, A3-A6).
+"""VERIFY_ID for authorized representatives: authorization then real-time consent (A3-A6).
 
 The account is discussed only after the authorization record matches and the policyholder approves. Consent
 status arrives as an observation; the request itself is a planned action run by the executor (INV-5).

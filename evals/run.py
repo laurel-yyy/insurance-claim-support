@@ -1,4 +1,4 @@
-"""Scenario eval runner (SPEC §15.3-§15.4): `python -m evals.run [--repeat N] [--scenario NAME]`.
+"""Scenario eval runner: `python -m evals.run [--repeat N] [--scenario NAME]`.
 
 Runs each scenario in-process through the real orchestrator with the real models, checks the assertions after
 every turn, and writes evals/report.md. A cost ceiling stops the run before it spends more than `--max-cost`.

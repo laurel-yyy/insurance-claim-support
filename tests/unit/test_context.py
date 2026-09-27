@@ -1,4 +1,4 @@
-"""ContextBuilder: phase-scoped grounding, and the INV-2 structural guarantee (SPEC §9.1.3)."""
+"""ContextBuilder: phase-scoped grounding, and the INV-2 structural guarantee."""
 
 from typing import Any
 

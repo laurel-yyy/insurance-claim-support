@@ -1,4 +1,4 @@
-"""ToolRegistry: phase whitelist and ownership checks for every tool call (SPEC §11.2, INV-4)."""
+"""ToolRegistry: phase whitelist and ownership checks for every tool call (INV-4)."""
 
 from typing import Any
 

@@ -1,4 +1,4 @@
-"""Extractor with FakeLLMClient: hybrid merge, conversion, degraded mode and request contents (SPEC §10.3)."""
+"""Extractor with FakeLLMClient: hybrid merge, conversion, degraded mode and request contents."""
 
 from typing import Any
 

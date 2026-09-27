@@ -1,4 +1,4 @@
-"""Extractor: structured NLU from the LLM, merged with regex pre-extraction (SPEC §10.3).
+"""Extractor: structured NLU from the LLM, merged with regex pre-extraction.
 
 Never raises for LLM problems: after one retry it falls back to regex-only (degraded) output. Its requests carry
 no record data: the system prompt holds only the date, phase, open-question kind, topic names and the last agent
@@ -16,7 +16,7 @@ from sop_agent.nlu.wire import NLUWireBase, build_nlu_wire
 from sop_agent.observability.logging import get_logger
 
 HISTORY_TURNS = 6
-ATTEMPTS = 2  # One try plus one retry (§10.3.2)
+ATTEMPTS = 2  # One try plus one retry
 EXTRACTOR_MAX_TOKENS = 1500
 NO_VALUE = "(none)"
 MAX_TOPIC_EXAMPLES = 3

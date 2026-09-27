@@ -23,7 +23,9 @@ TODAY = date(2026, 3, 10)
 MARGARET_HINTS = CaseHints(case_type="healthcare", status=ClaimStatus.DENIED, date_hint=DateHint(month=1))
 
 
-def test_margaret_hints_resolve_cl2048_uniquely_with_spec_scores(snapshot_repo: InMemoryRepository) -> None:
+def test_margaret_hints_resolve_cl2048_uniquely_with_the_expected_scores(
+    snapshot_repo: InMemoryRepository,
+) -> None:
     claims = snapshot_repo.claims_for("P9")
     scores = {s.claim.case_id: s.score for s in rank(claims, MARGARET_HINTS, TODAY)}
     assert scores == {"CL-2048": 6, "CL-2011": 0, "CL-1899": -6, "CL-2102": -6}

@@ -1,4 +1,4 @@
-"""Read-only tools exposed to the responder (SPEC §11.1). There are no write tools (INV-5).
+"""Read-only tools exposed to the responder. There are no write tools (INV-5).
 
 `party_id` is never a parameter: it comes from session state through ToolContext (INV-4). Every input
 parameter is required, so the schemas work as strict tools.

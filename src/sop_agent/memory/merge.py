@@ -1,4 +1,4 @@
-"""Merge one turn's NLU into memory (SPEC §9.1.2).
+"""Merge one turn's NLU into memory.
 
 Runs in every phase, which is what makes memory cross-phase. Pure: returns a new state plus this turn's
 events (also appended to the state's timeline); the input state is never mutated. Nothing here changes the
@@ -115,7 +115,7 @@ def _merge_identity(state: SessionState, nlu: NLUResult, events: _Events) -> Non
 
 
 def _merge_case_hints(memory: Memory, nlu: NLUResult, events: _Events) -> None:
-    """Non-empty values replace; keywords append without duplicates (§9.1.2)."""
+    """Non-empty values replace; keywords append without duplicates."""
     hints = memory.case_hints
     stored: list[str] = []
     if nlu.case_id and nlu.case_id.strip():
@@ -178,7 +178,7 @@ def _merge_intents(memory: Memory, nlu: NLUResult, turn: int) -> None:
 
 
 def _merge_questions(state: SessionState, nlu: NLUResult, turn: int, events: _Events) -> None:
-    """Defer account questions until they can be answered (§9.1.2, §8.2.7).
+    """Defer account questions until they can be answered.
 
     Only ACCOUNT questions (or ones with a missing label) are deferred. GENERAL, PROCESS and OUT_OF_SCOPE
     questions are left for the policy to answer or decline this turn, in any phase.
@@ -212,7 +212,7 @@ def _likely_claim_path(nlu: NLUResult) -> Path | None:
 
 
 def mark_deferred_answered(state: SessionState) -> SessionState:
-    """Mark deferred questions answered once a reply that answered them was delivered (§8.2.7).
+    """Mark deferred questions answered once a reply that answered them was delivered.
 
     Called by the orchestrator after a successful PROCESS_CASE reply; a fallback reply doesn't answer them.
     """

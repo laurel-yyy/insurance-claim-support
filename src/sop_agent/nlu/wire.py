@@ -1,4 +1,4 @@
-"""LLM-facing wire schemas (SPEC §10.2, §10.3.1, §8.2.6).
+"""LLM-facing wire schemas.
 
 Every field is required and there are no Optional or union types: "", 0, "none", [] and false mean "not
 mentioned". Enum strings are lowercased before validation, and unusable labels degrade per field instead of
@@ -179,7 +179,7 @@ def build_nlu_wire(guideline: DocumentGuideline) -> type[NLUWireBase]:
 
 
 class SelectorWire(_Lenient):
-    """ClaimSelector output. Candidate IDs go in the message, never in this schema (§8.2.6)."""
+    """ClaimSelector output. Candidate IDs go in the message, never in this schema."""
 
     case_id: str
     path: PathOrNone

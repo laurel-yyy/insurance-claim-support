@@ -1,4 +1,4 @@
-"""The Anthropic adapter follows every §10.2 rule. The SDK is replaced by a stub that records the call."""
+"""The Anthropic adapter follows every LLM API rule. The SDK is replaced by a stub that records the call."""
 
 import json
 from typing import Any, cast

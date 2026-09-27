@@ -1,4 +1,4 @@
-"""Global rules that run before the phase handler every turn (SPEC §9.2-§9.4).
+"""Global rules that run before the phase handler every turn.
 
 Safety, live-agent requests, off-topic limits, persuasion and abuse can escalate from any phase. Otherwise
 these rules only decorate the directive (decline, emotion plan, live-agent offer); they never skip a gate.
@@ -67,7 +67,7 @@ def made_progress(state: SessionState, start_event: int) -> bool:
 
 
 def apply_global_rules(state: SessionState, ctx: TurnContext, start_event: int) -> GlobalOutcome:
-    """Update counters, then either escalate (§9.3.4 order) or return decorations for the directive."""
+    """Update counters, then either escalate (in priority order) or return decorations for the directive."""
     deco = Decorations()
     nlu, counters, cfg = ctx.nlu, state.counters, ctx.cfg
     progress = made_progress(state, start_event)

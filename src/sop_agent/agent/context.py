@@ -1,4 +1,4 @@
-"""ContextBuilder: the only place that assembles grounding, by phase scope (SPEC §9.1.3, INV-2).
+"""ContextBuilder: the only place that assembles grounding, by phase scope (INV-2).
 
 `build()` calls only the builders for the scopes listed in PHASES[phase].context_scopes. VERIFY_ID lists no record
 scope, so before verification no policyholder record data can reach a prompt, whatever the directive says.
@@ -78,7 +78,7 @@ class ContextBuilder:
         }
 
     def general_kb(self, state: SessionState, directive: TurnDirective) -> dict[str, Any]:
-        """FAQ plus document guidance that isn't tied to a specific claim (§6.7)."""
+        """FAQ plus document guidance that isn't tied to a specific claim."""
         guideline = self._repo.document_guideline()
         return {
             "faq": self._faq,
@@ -90,7 +90,7 @@ class ContextBuilder:
     # --- record scopes (never listed for VERIFY_ID) ---------------------------------------------------------
 
     def party_profile(self, state: SessionState, directive: TurnDirective) -> dict[str, Any]:
-        """How to address the caller, policy number, masked email, whether it's a representative session (§9.1.3)."""
+        """How to address the caller, policy number, masked email, whether it's a representative session."""
         holder = self._repo.policyholder(state.memory.identity.party_id or "")
         if holder is None:
             return {}

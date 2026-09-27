@@ -1,4 +1,4 @@
-"""Read-only access to policyholders, claims and guidance (SPEC §6.4).
+"""Read-only access to policyholders, claims and guidance.
 
 There are no write methods: every side effect goes through the mock services in tools/.
 """

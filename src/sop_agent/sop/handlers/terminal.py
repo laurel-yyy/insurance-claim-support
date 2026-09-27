@@ -1,4 +1,4 @@
-"""ESCALATED and ENDED (SPEC §8.5). Terminal phases never advance (INV-7) and answer with fixed copy."""
+"""ESCALATED and ENDED. Terminal phases never advance (INV-7) and answer with fixed copy."""
 
 from sop_agent.domain.enums import EscalationReason, IdentityStatus, Phase
 from sop_agent.memory.state import SessionState

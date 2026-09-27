@@ -1,4 +1,4 @@
-"""TurnTrace: one masked JSONL line per turn in var/traces/{session_id}.jsonl (SPEC §16)."""
+"""TurnTrace: one masked JSONL line per turn in var/traces/{session_id}.jsonl."""
 
 import json
 from pathlib import Path

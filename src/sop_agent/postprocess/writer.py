@@ -1,4 +1,4 @@
-"""SummaryWriter: rephrases SummaryFacts with structured output (SPEC §8.4.2, §10.6).
+"""SummaryWriter: rephrases SummaryFacts with structured output.
 
 The draft is checked with the OutputGuard against the facts alone: every amount and date must come from the
 facts (G4), nothing may belong to another policyholder (G2), and the caller's DOB, ID digits or phone may not

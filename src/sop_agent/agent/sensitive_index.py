@@ -1,4 +1,4 @@
-"""Sensitive token index (SPEC §12.1), used by the output guard and by evals.
+"""Sensitive token index, used by the output guard and by evals.
 
 Built once from the repository. Text is scanned by extracting candidate tokens in canonical form (amounts as
 decimals, dates as ISO or month-day, phones as 10 digits, IDs upper-cased, names as token sequences) and looking
@@ -72,7 +72,7 @@ def amounts_in(text: str) -> set[Decimal]:
 
 
 def dates_in(text: str) -> tuple[set[str], set[str]]:
-    """(full ISO dates, month-day keys) mentioned in text. Month-only mentions are ignored (§12.1)."""
+    """(full ISO dates, month-day keys) mentioned in text. Month-only mentions are ignored."""
     full: set[str] = set()
     month_day: set[str] = set()
 

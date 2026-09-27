@@ -1,4 +1,4 @@
-"""Responder: prompt layering and the read-only tool loop (SPEC §10.4)."""
+"""Responder: prompt layering and the read-only tool loop."""
 
 from typing import Any
 

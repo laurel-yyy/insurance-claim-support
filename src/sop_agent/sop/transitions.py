@@ -1,4 +1,4 @@
-"""Phase transition whitelist (SPEC §7.2, INV-7).
+"""Phase transition whitelist (INV-7).
 
 Nothing ever returns to VERIFY_ID (verification stays valid for the session), nothing skips it, and terminal
 phases never advance. Only code calls `transition()`; LLM output cannot change the phase (INV-1).
@@ -32,7 +32,7 @@ class IllegalTransitionError(DomainError):
 
 
 class HopLimitExceededError(DomainError):
-    """More than MAX_HOPS_PER_TURN transitions were attempted in one turn (§7.4)."""
+    """More than MAX_HOPS_PER_TURN transitions were attempted in one turn."""
 
 
 def is_allowed(source: Phase, target: Phase) -> bool:
@@ -70,7 +70,7 @@ def _verification_complete(state: SessionState) -> bool:
 
 
 class HopCounter:
-    """Counts transitions within one turn so the policy loop can't cycle (§7.4)."""
+    """Counts transitions within one turn so the policy loop can't cycle."""
 
     def __init__(self, limit: int = MAX_HOPS_PER_TURN) -> None:
         self._limit = limit

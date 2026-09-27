@@ -1,4 +1,4 @@
-"""OutputGuard: the second line of defense on every reply (SPEC §12.2, INV-3).
+"""OutputGuard: the second line of defense on every reply (INV-3).
 
 The first line is data isolation (INV-2). Violations carry only the rule ID and a token kind, never the leaked
 text, so neither the regenerate note nor the trace repeats record data.

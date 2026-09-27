@@ -1,4 +1,4 @@
-"""Anthropic adapter (SPEC §10.2).
+"""Anthropic adapter.
 
 Rules this module enforces: no temperature/top_p/top_k, no assistant prefill, no forced tool_choice (the API
 default `auto` is used), structured output via `output_config.format` validated with Pydantic, `effort` only

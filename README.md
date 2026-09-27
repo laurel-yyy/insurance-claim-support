@@ -9,8 +9,7 @@ allowed actions and every side effect. The LLM only extracts structured meaning 
 the reply from a directive and phase-scoped grounding. Before verification, no policyholder record data enters any
 LLM request, so even a manipulated model has nothing to leak; an output guard is the second line of defense.
 
-Rule IDs in code comments (such as V2, K4, G1 or INV-3) name the rules described in this README; section numbers
-such as §8.1.2 refer to the original design specification, which is not part of this package.
+Rule IDs in code comments (such as V2, K4, G1 or INV-3) name the rules described in this README.
 
 ## 2. Quick start
 

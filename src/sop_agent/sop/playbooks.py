@@ -1,4 +1,4 @@
-"""Per-path handling guidance and follow-up items generated from data (SPEC §8.3.4).
+"""Per-path handling guidance and follow-up items generated from data.
 
 Follow-up items come from the claim data, not from the LLM's wording, so the summary email is traceable.
 """

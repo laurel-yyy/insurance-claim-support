@@ -1,4 +1,4 @@
-"""Render the summary email to text and HTML with Jinja2 (SPEC §8.4.2 step 3). HTML is autoescaped."""
+"""Render the summary email to text and HTML with Jinja2. HTML is autoescaped."""
 
 from pathlib import Path
 from typing import Any

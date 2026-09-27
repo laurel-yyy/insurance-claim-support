@@ -1,4 +1,4 @@
-"""POST_PROCESS: the summary email consent gate (SPEC §8.4.3, C1-C8, INV-6).
+"""POST_PROCESS: the summary email consent gate (C1-C8, INV-6).
 
 Only an explicit yes to the latest offer sends; the default is not to send. The target address lives in the
 pending question's payload (state), never in the directive, and the LLM can't trigger a send.

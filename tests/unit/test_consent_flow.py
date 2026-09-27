@@ -1,4 +1,4 @@
-"""Representative authorization and real-time consent through the policy (SPEC §8.1.7, S8)."""
+"""Representative authorization and real-time consent through the policy (S8)."""
 
 from sop_agent.data.repository import InMemoryRepository
 from sop_agent.domain.dates import DateHint
@@ -34,7 +34,7 @@ def _david(**extra: object) -> NLUResult:
 
 
 def _executor_sent_request(state: SessionState) -> SessionState:
-    """Stand-in for ActionExecutor.run(REQUEST_CONSENT), which lands in M4."""
+    """Stand-in for ActionExecutor.run(REQUEST_CONSENT) in the policy-only tests."""
     state = state.model_copy(deep=True)
     state.memory.representative.consent_status = ConsentStatus.PENDING
     return state

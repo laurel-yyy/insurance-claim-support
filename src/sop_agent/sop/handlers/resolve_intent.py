@@ -1,4 +1,4 @@
-"""RESOLVE_INTENT (SPEC §8.2). BOUNDED: code scores and offers candidates; the LLM may only pick among them.
+"""RESOLVE_INTENT. BOUNDED: code scores and offers candidates; the LLM may only pick among them.
 
 A ClaimSelector choice arrives as an observation and is accepted only if it names one of the candidates.
 """
@@ -56,7 +56,7 @@ def _choosing(ctx: TurnContext) -> bool:
 
 
 def _selector_choice(ctx: TurnContext, claims: Sequence[Claim]) -> tuple[Claim, Path | None] | None:
-    """A ClaimSelector answer to CHOOSE_CLAIM, accepted only if it names a listed candidate (§8.2.6)."""
+    """A ClaimSelector answer to CHOOSE_CLAIM, accepted only if it names a listed candidate."""
     selection = ctx.observations.claim_selection
     if not _choosing(ctx) or selection is None or ctx.pending is None:
         return None

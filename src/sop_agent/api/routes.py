@@ -1,4 +1,4 @@
-"""HTTP routes (SPEC §13.1)."""
+"""HTTP routes."""
 
 from dataclasses import dataclass
 from typing import Annotated
