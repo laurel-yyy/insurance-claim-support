@@ -43,6 +43,9 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "T20", "BLE", "N"]
 # The formatter enforces line length for code; it never splits string literals.
 ignore = ["E501"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["sop_agent", "evals", "tests"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true

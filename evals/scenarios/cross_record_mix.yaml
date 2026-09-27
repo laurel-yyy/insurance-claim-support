@@ -1,0 +1,12 @@
+name: cross_record_mix
+description: P9's name, P12's DOB and P9's ID number never add up to a pass.
+today: '2026-03-10'
+consent_scenario: default
+turns:
+- user: I'm Margaret Chen, born 1964-09-10, and my SSN last four is 4472.
+  expect:
+    events_exclude:
+    - VERIFIED
+    phase: VERIFY_ID
+    events_include:
+    - VERIFICATION_FAILED

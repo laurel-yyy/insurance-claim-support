@@ -489,3 +489,16 @@ def test_regex_llm_conflicts_emit_nlu_conflict(snapshot_repo: InMemoryRepository
     [conflict] = [e for e in decision.events if e.type is EventType.NLU_CONFLICT]
     assert conflict.data == {"fields": ["dob", "policy_number"]}
     assert EventType.LLM_FALLBACK not in types(decision)
+
+
+def test_no_thats_all_right_after_auto_resolution_closes_instead_of_rejecting(
+    snapshot_repo: InMemoryRepository,
+) -> None:
+    eng = engine(snapshot_repo)
+    state = turn(eng, snapshot_repo, new_state(), margaret_message()).state
+    decision = turn(
+        eng, snapshot_repo, state, nlu(dialog_acts=[DialogAct.DENY, DialogAct.THANKS, DialogAct.DONE])
+    )
+    assert EventType.CLAIM_REJECTED_BY_CALLER not in types(decision)
+    assert decision.state.phase is Phase.POST_PROCESS
+    assert "CL-2048" not in decision.state.memory.excluded_case_ids

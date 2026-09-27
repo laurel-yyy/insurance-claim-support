@@ -62,6 +62,7 @@ def _caller_moves_on(state: SessionState, ctx: TurnContext, claim: Claim) -> Ste
     if (
         first_reply
         and ctx.signal(DialogAct.DENY, Phase.PROCESS_CASE)
+        and not ctx.signal(DialogAct.DONE, Phase.PROCESS_CASE)  # "No, that's all" closes; it doesn't reject
         and _auto_resolved(state, claim.case_id)
     ):
         state.memory.excluded_case_ids.add(claim.case_id)

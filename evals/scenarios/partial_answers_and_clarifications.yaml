@@ -1,0 +1,35 @@
+name: partial_answers_and_clarifications
+description: One field per turn, 'which email?', and a DOB format question.
+today: '2026-03-10'
+consent_scenario: default
+turns:
+- user: Margaret Chen.
+  expect:
+    events_exclude: &id001
+    - VERIFIED
+    phase: VERIFY_ID
+- user: Which email do you need, my work one or my personal one?
+  expect:
+    events_exclude: *id001
+    phase: VERIFY_ID
+    reply_contains_any:
+    - account
+    - on file
+- user: What format should the date of birth be in?
+  expect:
+    events_exclude: *id001
+    phase: VERIFY_ID
+    reply_contains_any:
+    - format
+    - any way
+    - however
+- user: It's 03/15/1985.
+  expect:
+    events_exclude: *id001
+    phase: VERIFY_ID
+    events_include:
+    - IDENTITY_FIELD_CAPTURED
+- user: My email is margaret@email.com.
+  expect:
+    events_include:
+    - VERIFIED

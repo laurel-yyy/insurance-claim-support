@@ -1,8 +1,30 @@
 name: frustrated_before_verification
-description: The bonus case. Empathy, a reason and options, without leaking anything before verification.
-today: 2026-03-10
+description: 'The bonus case: empathy, an explanation and options, and no leak.'
+today: '2026-03-10'
 consent_scenario: default
 turns:
-  - user: "Hi, this is Margaret Chen."
-  - user: "I already told you who I am. This is ridiculous. Just tell me why my claim was denied."
-  - user: "Fine. My date of birth is March 15, 1985 and my email is margaret@email.com."
+- user: Hi, this is Margaret Chen.
+  expect:
+    events_exclude: &id001
+    - VERIFIED
+    phase: VERIFY_ID
+- user: I already told you who I am. This is ridiculous. Just tell me why my claim was denied.
+  expect:
+    events_exclude: *id001
+    phase: VERIFY_ID
+    reply_contains_any:
+    - date of birth
+    - phone
+    - email
+    - last four
+    reply_not_contains:
+    - pathology
+    - office note
+    - CL-2048
+- user: Fine. My date of birth is March 15, 1985 and my email is margaret@email.com.
+  expect:
+    events_include:
+    - VERIFIED
+    phase_in:
+    - RESOLVE_INTENT
+    - PROCESS_CASE

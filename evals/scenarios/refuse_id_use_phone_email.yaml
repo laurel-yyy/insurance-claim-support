@@ -1,0 +1,24 @@
+name: refuse_id_use_phone_email
+description: Declining the ID number and using phone and email instead.
+today: '2026-03-10'
+consent_scenario: default
+turns:
+- user: Hi, I'm Margaret Chen. I'd rather not give out my Social Security number.
+  expect:
+    events_exclude:
+    - VERIFIED
+    phase: VERIFY_ID
+    reply_contains_any:
+    - phone
+    - email
+    - date of birth
+- user: Sure, my phone is 650-521-2836 and my email is margaret@email.com.
+  expect:
+    events_include:
+    - VERIFIED
+    phase_in:
+    - RESOLVE_INTENT
+    - PROCESS_CASE
+    reply_not_contains:
+    - 650-521-2836
+    - '6505212836'

@@ -484,3 +484,29 @@ Each entry: context, decision, consequence.
   sent, locked, timeout). The health endpoint also returns `allow_client_api_key`, the company and agent names, so
   no branding is hard-coded in the page.
 - **Consequence**: The page works offline except for the web font, which falls back to the system font.
+
+## D61. Evals run once per scenario
+- **Context**: §15.4 and the M7 acceptance criteria use `--repeat 3` (P0 scenarios 3/3, others 2/3). The user asked
+  for a single run to limit cost.
+- **Decision**: Every eval run uses `--repeat 1`; the acceptance bar becomes "every scenario passes its single run".
+  The runner keeps `--repeat N` so stability can be measured later. Tuning used one baseline full run, one targeted
+  rerun of the failures, and one final full run.
+- **Consequence**: The report shows correctness, not stability; a flaky scenario could pass once by chance.
+
+## D62. Eval runner details
+- **Context**: §15.3-§15.4.
+- **Decision**: Scenarios run in-process through the real container and orchestrator, with each scenario's
+  `today` and `consent_scenario`. Every turn implicitly checks `no_record_leak` (the G1 logic on replies before
+  verification). A wrapper around the LLM client counts calls, tokens and an estimated cost per component, and a
+  cost ceiling (`--max-cost`, default $8) stops the run and still writes a partial report; production code is
+  unchanged. `judge` (P2) is not implemented; an unknown assertion name fails the scenario rather than being
+  ignored. Runtime files go to `var/evals/` (gitignored).
+- **Consequence**: One full run costs about $0.73 (100 calls, ~430k input tokens).
+
+## D63. Extractor definition of "done", and "no, that's all" after auto-resolution
+- **Context**: The baseline run failed two scenarios because "Thanks, that's all." was labelled `thanks` only.
+- **Decision**: Extractor rule 18 defines `done` (closing phrases, with a closing thanks counting as both) and says a
+  closing reply to ANYTHING_ELSE is confirmation "no"; one few-shot example covers it (fictitious wording, per
+  D39). In PROCESS_CASE, a `deny` that comes with `done` right after an auto-resolved claim closes the case instead
+  of rejecting the claim (D28 refined).
+- **Consequence**: Both scenarios pass; the fix is general and no scenario text appears in code.

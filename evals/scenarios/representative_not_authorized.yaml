@@ -1,0 +1,14 @@
+name: representative_not_authorized
+description: 'An unregistered representative: the account isn''t discussed.'
+today: '2026-03-10'
+consent_scenario: default
+turns:
+- user: Hi, this is Kevin Chen. I'm calling for my mother, Margaret Chen. Her date of birth is March 15, 1985 and her phone
+    number is 650-521-2836.
+  expect:
+    events_exclude:
+    - VERIFIED
+    phase: VERIFY_ID
+    events_include:
+    - REP_NOT_AUTHORIZED
+    - LIVE_AGENT_OFFERED

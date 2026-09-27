@@ -1,0 +1,15 @@
+name: alias_name_yaven_li
+description: An alias name matches P13, who has no claims on file.
+today: '2026-03-10'
+consent_scenario: default
+turns:
+- user: Hi, my name is Yaven Li. My date of birth is December 3, 1989 and my national ID last four is 5317.
+  expect:
+    events_include:
+    - VERIFIED
+    - NO_CLAIMS_ON_FILE
+    phase: RESOLVE_INTENT
+    reply_contains_any:
+    - claims on file
+    - no claims
+    - any claims

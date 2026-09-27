@@ -1,5 +1,5 @@
-name: margaret_happy_path
-description: Test case from the brief, then document questions, then the email summary.
+name: document_alternatives_exhausted
+description: No substitutes available either, so a claims specialist review is offered and accepted.
 today: '2026-03-10'
 consent_scenario: default
 turns:
@@ -20,24 +20,21 @@ turns:
     reply_not_contains:
     - '4472'
     - '1985-03-15'
-- user: How do I send them? I might not be able to get the original pathology report.
+- user: I can't get the pathology report. The lab that did the test has closed.
   expect:
     phase: PROCESS_CASE
     reply_contains_any:
-    - portal
-    - upload
-    reply_contains_any_2:
     - replacement
     - copy
-- user: Thanks, that's all.
-  expect:
-    phase: POST_PROCESS
-    quick_replies_include:
-    - Send the summary
-    - No thanks
-- user: Yes, please send it.
+    - resend
+    - re-sent
+- user: I already tried all of that. There's no copy or substitute of any kind anywhere.
   expect:
     events_include:
-    - EMAIL_SENT
-    phase: ENDED
-    email_sent: true
+    - LIVE_AGENT_OFFERED
+    phase: PROCESS_CASE
+- user: Yes, please.
+  expect:
+    events_include:
+    - ESCALATED
+    escalated: true

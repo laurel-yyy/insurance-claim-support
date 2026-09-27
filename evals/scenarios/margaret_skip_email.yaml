@@ -1,5 +1,5 @@
-name: margaret_happy_path
-description: Test case from the brief, then document questions, then the email summary.
+name: margaret_skip_email
+description: Skipping the email and ending normally.
 today: '2026-03-10'
 consent_scenario: default
 turns:
@@ -20,24 +20,12 @@ turns:
     reply_not_contains:
     - '4472'
     - '1985-03-15'
-- user: How do I send them? I might not be able to get the original pathology report.
-  expect:
-    phase: PROCESS_CASE
-    reply_contains_any:
-    - portal
-    - upload
-    reply_contains_any_2:
-    - replacement
-    - copy
-- user: Thanks, that's all.
+- user: That's everything, thank you.
   expect:
     phase: POST_PROCESS
-    quick_replies_include:
-    - Send the summary
-    - No thanks
-- user: Yes, please send it.
+- user: No thanks, I don't need the email.
   expect:
     events_include:
-    - EMAIL_SENT
+    - EMAIL_SKIPPED
     phase: ENDED
-    email_sent: true
+    email_sent: false

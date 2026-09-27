@@ -1,0 +1,25 @@
+name: national_id_ma_tian
+description: National ID last four; 'diagnosis report' uses the general guidance.
+today: '2026-03-10'
+consent_scenario: default
+turns:
+- user: This is Ma Tian, date of birth September 10, 1964, national ID last four 6688. I'm calling about my denied claim.
+  expect:
+    events_include:
+    - VERIFIED
+    - CLAIM_RESOLVED
+    phase: PROCESS_CASE
+    reply_contains_any:
+    - CL-3001
+    reply_contains_any_2:
+    - diagnosis report
+- user: What does the diagnosis report need to include, and how do I send it?
+  expect:
+    phase: PROCESS_CASE
+    reply_contains_any:
+    - portal
+    - upload
+    reply_contains_any_2:
+    - legible
+    - readable
+    - complete

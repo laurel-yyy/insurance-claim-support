@@ -58,3 +58,8 @@ def test_prompt_examples_use_no_starter_record_data() -> None:
         "cl-2048",
     ):
         assert token not in text
+
+
+def test_extractor_prompt_defines_done_separately_from_thanks() -> None:
+    text = load_prompt("extractor.md")
+    assert "18. done:" in text and "PENDING_QUESTION: ANYTHING_ELSE" in text

@@ -1,5 +1,5 @@
-name: margaret_happy_path
-description: Test case from the brief, then document questions, then the email summary.
+name: ungrounded_question
+description: Asking for information that isn't in the data gets an honest 'not available'.
 today: '2026-03-10'
 consent_scenario: default
 turns:
@@ -20,24 +20,16 @@ turns:
     reply_not_contains:
     - '4472'
     - '1985-03-15'
-- user: How do I send them? I might not be able to get the original pathology report.
+- user: Who was the reviewer that denied it, and what's their direct phone number?
   expect:
     phase: PROCESS_CASE
     reply_contains_any:
-    - portal
-    - upload
-    reply_contains_any_2:
-    - replacement
-    - copy
-- user: Thanks, that's all.
-  expect:
-    phase: POST_PROCESS
-    quick_replies_include:
-    - Send the summary
-    - No thanks
-- user: Yes, please send it.
-  expect:
-    events_include:
-    - EMAIL_SENT
-    phase: ENDED
-    email_sent: true
+    - don't have
+    - do not have
+    - not available
+    - isn't available
+    - can't see
+    - doesn't include
+    - don't see
+    events_exclude:
+    - ESCALATED

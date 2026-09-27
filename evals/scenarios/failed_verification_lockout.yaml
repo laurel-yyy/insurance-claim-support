@@ -1,0 +1,24 @@
+name: failed_verification_lockout
+description: Repeated errors lock verification and transfer to a live agent.
+today: '2026-03-10'
+consent_scenario: default
+turns:
+- user: My name is Margaret Chen, date of birth 1985-03-15, SSN last four 1111.
+  expect:
+    events_exclude: &id001
+    - VERIFIED
+    phase: VERIFY_ID
+    events_include:
+    - VERIFICATION_FAILED
+- user: Sorry, the last four is 2222.
+  expect:
+    events_exclude: *id001
+    phase: VERIFY_ID
+    events_include:
+    - VERIFICATION_FAILED
+- user: Then it must be 3333.
+  expect:
+    events_include:
+    - VERIFICATION_LOCKED
+    - ESCALATED
+    escalated: true
