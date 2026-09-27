@@ -284,3 +284,60 @@ Each entry: context, decision, consequence.
   (2 attempts) isn't in the spec; it's the conservative choice.
 - **Consequence**: M4's orchestrator must call `settle()` after `executor.run()` whenever the decision planned a
   send, and use the settled directive. SPEC.md is not edited; this entry is the record.
+
+## D39. Extractor few-shot examples use fictitious values
+- **Context**: The §10.3.3 prompt's examples use starter records verbatim (Margaret Chen's name, policy number,
+  DOB, SSN last four and email; David Chen as her son). The system prompt goes into every extractor request,
+  including pre-verification requests from other callers, so sending it verbatim would put policyholder record data
+  into LLM requests before verification (INV-2) and fixture text into the codebase (INV-10).
+- **Decision**: `agent/prompts/extractor.md` keeps the spec's rules and example structure exactly, with fictitious
+  values (Jane Doe, POL-1234, 1990-04-12, 1234, jane.doe@example.com, Sam Doe, 555-010-0199, CL-5678).
+  SPEC.md is not edited.
+- **Consequence**: A test fails if any starter record value appears in the prompt, and the INV-2 extractor test
+  scans a full pre-verification request for record data.
+
+## D40. NLU wire models and conversion live in their own modules
+- **Context**: §10.3.1 puts the wire schema and `to_domain` in `nlu/schema.py`, which would pass ~400 lines.
+- **Decision**: `nlu/schema.py` keeps the domain models, `nlu/wire.py` holds the wire models and
+  `build_nlu_wire()`, and `nlu/convert.py` holds `to_domain()` and the degraded result.
+- **Consequence**: Every NLU module stays under ~200 lines.
+
+## D41. Wire labels degrade per field
+- **Context**: Structured output guarantees the shape but not enum casing; one bad label would otherwise fail
+  the whole extraction and force degraded mode.
+- **Decision**: Before validation, enum strings are lowercased. Unknown items in enum lists (dialog acts, declined
+  fields, follow-up topics) are dropped. Unknown scalars take a safe default: `id_kind`/`claim_status`/intent
+  `path` → `none`, `caller_role` → `unknown`, `scope` → `in_scope`, `emotion` → `neutral`, `confirmation` →
+  `unclear` (never a yes), question `kind` → `account` (D21). A missing required field still fails validation and
+  triggers the retry and then degraded mode.
+- **Consequence**: A mislabeled field can't turn into a confirmation or bypass a gate; the rest of the extraction
+  is kept.
+
+## D42. Structured output is validated inside the LLM client
+- **Context**: §10.1 has `output_schema: type[BaseModel]` and `parsed`.
+- **Decision**: `LLMRequest.output_model` is the Pydantic model. The client sends
+  `output_config.format` with the SDK's `anthropic.transform_schema()` (which closes objects and moves
+  constraints into descriptions) and validates the reply with the same model, so the lenient label handling (D41)
+  runs there. A refusal or `max_tokens` stop with a schema, or output that fails validation, raises
+  `LLMOutputError`. `llm/` stays business-agnostic.
+- **Consequence**: Callers only ever see a validated wire object or an `LLMError`.
+
+## D43. Extraction problems become policy events
+- **Context**: Degraded mode (`LLM_FALLBACK`) and regex/LLM disagreements (`NLU_CONFLICT`) must reach the trace
+  and the directive (§10.3.2).
+- **Decision**: `NLUResult` carries `degraded` and `conflicts`; the global rules emit `LLM_FALLBACK
+  {component: extractor}` plus a "ask the caller to rephrase if unclear" instruction, and `NLU_CONFLICT {fields}`.
+  The Extractor itself never raises for LLM problems and never writes events.
+- **Consequence**: All events for a turn come from `decide()`, in one timeline.
+
+## D44. Extractor request contents and model settings
+- **Context**: §10.3.3, §10.7.
+- **Decision**: The system prompt is rendered single-pass (a value containing `{phase}` is never re-expanded)
+  with today's date, the phase, the open question kind (e.g. `OFFER_SUMMARY_EMAIL`), the last agent message and
+  the follow-up topic names with up to 3 trigger phrases each. Messages are the last 6 turns before the current one
+  (starting with a caller turn) plus the current message. The extractor and selector use `EXTRACTOR_MODEL` as
+  configured (`claude-haiku-4-5-20251001` per §14.1) with no effort and no thinking setting (Haiku 4.5 rejects
+  effort); max tokens are 1500 and 400. `Container.make_llm(api_key)` builds a client for the server key or a key
+  entered in the UI (M6).
+- **Consequence**: No record data enters extractor requests before verification; agent replies in the history
+  have passed the output guard (M4).

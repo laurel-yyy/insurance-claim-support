@@ -465,3 +465,27 @@ def test_persuasion_is_not_counted_after_verification(snapshot_repo: InMemoryRep
         state = turn(eng, snapshot_repo, state, nlu(dialog_acts=[DialogAct.COMPLAIN])).state
     assert state.counters.persuasion_attempts == 0
     assert state.phase is Phase.PROCESS_CASE
+
+
+# --- Extraction notes (M3) --------------------------------------------------------------------------------
+
+
+def test_degraded_extraction_emits_llm_fallback_and_asks_to_rephrase(
+    snapshot_repo: InMemoryRepository,
+) -> None:
+    decision = turn(
+        engine(snapshot_repo), snapshot_repo, new_state(), nlu(degraded=True, dialog_acts=[DialogAct.OTHER])
+    )
+    fallback = [e for e in decision.events if e.type is EventType.LLM_FALLBACK]
+    assert [e.data for e in fallback] == [{"component": "extractor"}]
+    assert any("rephrase" in m for m in decision.directive.must)
+    assert decision.state.phase is Phase.VERIFY_ID
+
+
+def test_regex_llm_conflicts_emit_nlu_conflict(snapshot_repo: InMemoryRepository) -> None:
+    decision = turn(
+        engine(snapshot_repo), snapshot_repo, new_state(), nlu(conflicts=["dob", "policy_number"])
+    )
+    [conflict] = [e for e in decision.events if e.type is EventType.NLU_CONFLICT]
+    assert conflict.data == {"fields": ["dob", "policy_number"]}
+    assert EventType.LLM_FALLBACK not in types(decision)

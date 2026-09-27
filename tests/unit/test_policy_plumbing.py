@@ -66,3 +66,15 @@ def test_container_wires_policy_thresholds_from_settings() -> None:
     container = Container.build(settings)
     config = container.policy.config
     assert (config.verify.min_matches, config.scope.hard_limit, config.emotion.persuasion_max) == (4, 7, 2)
+
+
+def test_container_builds_extractor_and_selector_from_config() -> None:
+    from sop_agent.llm.fake import FakeLLMClient
+
+    settings = Settings(_env_file=None, fixtures_dir=SNAPSHOT_DIR, demo_today=date(2026, 3, 10))
+    container = Container.build(settings)
+    assert container.prompts.extractor.startswith("You are the language-understanding step")
+    extractor = container.make_extractor(FakeLLMClient())
+    assert extractor.wire_model.topic_names  # topics came from the loaded guideline
+    assert container.make_selector(FakeLLMClient()) is not None
+    assert "sk-" not in repr(container.make_llm("sk-ant-secret"))

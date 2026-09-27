@@ -77,6 +77,7 @@ def apply_global_rules(state: SessionState, ctx: TurnContext, start_event: int) 
     update_persuasion(counters, nlu, at_gate, progress)
     scope = apply_scope(counters, nlu, cfg.scope)
 
+    _extraction_notes(state, ctx, deco)
     accepted = _live_agent_answer(state, ctx, deco)
     signals = EscalationSignals(
         safety_concern=nlu.safety_concern,
@@ -144,3 +145,15 @@ def _route_questions(state: SessionState, ctx: TurnContext, deco: Decorations) -
             deco.answer_now.append(f"{text} (answer from the reasons library for this step)")
         else:
             deco.answer_now.append(text)
+
+
+EXTRACTOR_COMPONENT = "extractor"
+
+
+def _extraction_notes(state: SessionState, ctx: TurnContext, deco: Decorations) -> None:
+    """Record degraded extraction (LLM_FALLBACK) and regex/LLM disagreements (NLU_CONFLICT) in the timeline."""
+    if ctx.nlu.degraded:
+        emit(state, ctx, EventType.LLM_FALLBACK, component=EXTRACTOR_COMPONENT)
+        deco.must.append("If the caller's message is unclear to you, ask them to rephrase it.")
+    if ctx.nlu.conflicts:
+        emit(state, ctx, EventType.NLU_CONFLICT, fields=list(ctx.nlu.conflicts))

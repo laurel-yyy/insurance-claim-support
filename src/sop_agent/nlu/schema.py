@@ -2,7 +2,7 @@
 
 `NLUResult` is what memory merge and the policy consume: optional fields, where None or empty means "not
 mentioned". Identity values stay raw here; memory merge re-normalizes them (code never trusts LLM formatting).
-The LLM wire schema and its conversion (`to_domain`) arrive with the Extractor (M3).
+The LLM wire schema lives in `nlu/wire.py` and its conversion in `nlu/convert.py` (size, DECISIONS D40).
 """
 
 from enum import StrEnum
@@ -119,3 +119,5 @@ class NLUResult(BaseModel):
     manipulation_attempt: bool = False
     abusive: bool = False
     safety_concern: bool = False
+    degraded: bool = False  # The LLM failed; regex-only extraction (§10.3.2)
+    conflicts: list[str] = Field(default_factory=list)  # Format fields where regex and LLM disagreed
