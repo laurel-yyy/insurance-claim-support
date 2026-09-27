@@ -130,7 +130,7 @@ def _live_agent_answer(state: SessionState, ctx: TurnContext, deco: Decorations)
 
 
 def _route_questions(state: SessionState, ctx: TurnContext, deco: Decorations) -> None:
-    """General and process questions are answered now; account questions wait for verification (D21)."""
+    """General and process questions are answered now; account questions wait for verification."""
     verified = state.memory.identity.status is IdentityStatus.VERIFIED
     deferred_now = {q.text.casefold() for q in state.memory.deferred_questions if q.turn == ctx.turn}
     for question in ctx.nlu.questions:

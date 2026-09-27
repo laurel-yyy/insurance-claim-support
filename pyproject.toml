@@ -35,7 +35,7 @@ packages = ["src/sop_agent"]
 line-length = 110
 target-version = "py312"
 src = ["src", "tests"]
-# Docs are prose; the formatter must not rewrite code blocks in SPEC.md.
+# Docs are prose; the formatter must not rewrite their code blocks.
 extend-exclude = ["docs"]
 
 [tool.ruff.lint]

@@ -286,7 +286,7 @@ def test_input_identity_state_is_never_mutated(snapshot_repo: InMemoryRepository
     assert state.model_dump() == before
 
 
-# --- V2/V5: the policy number is an input to evaluate_identity (DECISIONS D15) -------------------------
+# --- V2/V5: the policy number is an input to evaluate_identity -------------------------
 
 
 def _p9_fields_with_policy(policy_number: str) -> IdentityState:

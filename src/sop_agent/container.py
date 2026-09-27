@@ -184,7 +184,7 @@ class LLMAccess:
     """Which LLM components serve a session: the server key, or a key a tester entered in the UI.
 
     A UI-entered key lives only here, in memory, keyed by session ID. It is never part of SessionState, traces,
-    logs or any response, and it is dropped when the session is evicted (INV-9, D57).
+    logs or any response, and it is dropped when the session is evicted (INV-9).
     """
 
     container: "Container"

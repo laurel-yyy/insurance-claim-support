@@ -44,5 +44,5 @@ class ToolRegistry:
 
 
 def _case_ids(data: dict[str, Any]) -> list[str]:
-    """Claims a result was about (for case_log.discussed_case_ids). A plain listing discusses none (D48)."""
+    """Claims a result was about (for case_log.discussed_case_ids). A plain listing discusses none."""
     return [str(data["case_id"])] if "case_id" in data else []

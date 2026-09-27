@@ -9,8 +9,8 @@ allowed actions and every side effect. The LLM only extracts structured meaning 
 the reply from a directive and phase-scoped grounding. Before verification, no policyholder record data enters any
 LLM request, so even a manipulated model has nothing to leak; an output guard is the second line of defense.
 
-The full design is in [`docs/SPEC.md`](docs/SPEC.md); every deviation or clarification is recorded in
-[`docs/DECISIONS.md`](docs/DECISIONS.md).
+Rule IDs in code comments (such as V2, K4, G1 or INV-3) name the rules described in this README; section numbers
+such as §8.1.2 refer to the original design specification, which is not part of this package.
 
 ## 2. Quick start
 
@@ -223,7 +223,7 @@ make eval      # 18 real-model scenarios, writes evals/report.md
 Offline: **665 tests** (unit and integration with `FakeLLMClient`), including an INV-2 scan of every LLM request
 made before verification and fault injection for every LLM component.
 
-Real-model scenario evals (`python -m evals.run`, each scenario run once; see D61):
+Real-model scenario evals (`python -m evals.run`, each scenario run once):
 
 | Scenario | Result | Scenario | Result |
 |---|---|---|---|
@@ -241,49 +241,3 @@ Real-model scenario evals (`python -m evals.run`, each scenario run once; see D6
 was 16/18; the fix (defining the `done` dialog act in the extractor prompt) is described in `evals/report.md`.
 Every eval turn also checks that nothing leaks before verification. Across the final run's 49 turns there were no
 fallback replies and no guard blocks.
-
-## 11. Design decisions and trade-offs
-
-The most important entries in `docs/DECISIONS.md`:
-
-- **Two LLM calls per turn** (extraction and reply) in exchange for a controllable, testable workflow.
-- **Question labels from the extractor** (`account`, `general`, `process`, `out_of_scope`) decide what's deferred
-  until verification, so mixed questions are split correctly (D21).
-- **The anti-probing signature includes the policy number**, normalized on both sides (D15).
-- **Actions and the policy stay pure:** the email is sent by the executor after the policy plans it; a failed send
-  stays in POST_PROCESS and offers a retry (D38).
-- **Fictitious few-shot examples** in the extractor prompt, because the spec's examples used real records that would
-  otherwise reach every pre-verification request (D39).
-- **Keys:** a UI-entered key lives only in server memory for that session; the log formatter redacts anything
-  shaped like a key, including tracebacks (D57, D64).
-
-## 12. Limitations and future work
-
-- **Latency:** two LLM calls per turn add a few seconds; streaming or merging the calls would help.
-- **Knowledge-based verification** has limited security; production would add OTP or similar.
-- **The guard is lexical:** a paraphrased leak is possible in theory, but before verification the model never has
-  record data (INV-2).
-- **No fuzzy matching beyond listed aliases:** some speech-recognition errors will fail verification, deliberately.
-- **Consent is polled once per turn;** production would use push notifications.
-- **Formal appeals can't be filed here;** those requests go to a live agent.
-- **Sessions live in memory** on a single instance; there's no persistence or horizontal scaling.
-- **English only;** the guidance data is already structured for other languages.
-- **Untuned thresholds** (attempts, off-topic limits, persuasion budget).
-- **Evals ran once per scenario:** they show correctness, not stability; `--repeat N` measures stability.
-- **The SOP definition is code,** not declarative configuration; making it data would let the same engine run other
-  procedures.
-- **The UI loads Public Sans from Google Fonts** and falls back to the system font offline.
-
-## Demo script (3–4 minutes)
-
-1. **Margaret's full flow (about 2 minutes).** Play `margaret_happy_path`, or type the brief's sentence. Point out
-   the hint chip under Resolve and the stored hints in the Inspector; the lock opens and CL-2048 is found in the same
-   turn. Ask how to submit the documents and what to do without the original, say "that's all", show the draft in
-   *Outbox and tickets*, agree to send it, and show the sent email.
-2. **Emotion and SOP recovery (about 45 seconds).** Play `frustrated_before_verification`: empathy, a reason and
-   options, with nothing leaked.
-3. **Representative and consent (about 1 minute).** Play `representative_consent_approved` (pending, then
-   approved, then the claim). Switch *Consent* to `timeout` and play `representative_consent_timeout`: the account is
-   never discussed and a live representative is offered.
-4. **Scope control and injection (about 30 seconds).** Play `off_topic_retries` (a live-agent offer after three),
-   then `prompt_injection` (the SOP doesn't change).

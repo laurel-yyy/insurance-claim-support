@@ -88,7 +88,7 @@ class PlannedAction(BaseModel):
 
 
 class ActionResult(BaseModel):
-    """What the executor reports back for one planned action, so the policy can settle the turn (D38)."""
+    """What the executor reports back for one planned action, so the policy can settle the turn."""
 
     action: PlannedAction
     ok: bool

@@ -78,7 +78,7 @@ def update_emotion_counters(counters: Counters, nlu: NLUResult, progress: bool) 
 
 
 def update_persuasion(counters: Counters, nlu: NLUResult, at_gate: bool, progress: bool) -> None:
-    """Budget counts only at VERIFY_ID gates; any progress resets it (DECISIONS D27)."""
+    """Budget counts only at VERIFY_ID gates; any progress resets it."""
     if progress or not at_gate:
         counters.persuasion_attempts = 0
     elif is_resisting_gate(nlu):

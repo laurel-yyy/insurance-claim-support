@@ -1,7 +1,7 @@
 """Structured JSON logging. Pass fields via `extra={"fields": {...}}`; values must already be masked.
 
 As a last line of defense (INV-9), every formatted line has anything shaped like an API key redacted, including
-exception tracebacks, where third-party error messages can quote request headers (D64).
+exception tracebacks, where third-party error messages can quote request headers.
 """
 
 import json

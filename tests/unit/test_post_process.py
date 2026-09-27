@@ -88,7 +88,7 @@ def test_c2_successful_send_ends_the_session(snapshot_repo: InMemoryRepository) 
     assert any("EMAIL_SENT is in events" in m for m in settled.directive.must)
 
 
-def test_d38_failed_send_stays_in_post_process_and_offers_a_retry(snapshot_repo: InMemoryRepository) -> None:
+def test_failed_send_stays_in_post_process_and_offers_a_retry(snapshot_repo: InMemoryRepository) -> None:
     eng, state = _offered(snapshot_repo)
     failed = _settle(eng, snapshot_repo, _send(eng, snapshot_repo, state), ok=False)
     assert failed.state.phase is Phase.POST_PROCESS
@@ -106,7 +106,7 @@ def test_d38_failed_send_stays_in_post_process_and_offers_a_retry(snapshot_repo:
     assert _settle(eng, snapshot_repo, retry, ok=True).state.phase is Phase.ENDED
 
 
-def test_d38_second_failure_skips_the_email_and_ends(snapshot_repo: InMemoryRepository) -> None:
+def test_second_failed_send_skips_the_email_and_ends(snapshot_repo: InMemoryRepository) -> None:
     eng, state = _offered(snapshot_repo)
     failed = _settle(eng, snapshot_repo, _send(eng, snapshot_repo, state), ok=False)
     again = _settle(eng, snapshot_repo, _send(eng, snapshot_repo, failed.state), ok=False)
@@ -116,14 +116,14 @@ def test_d38_second_failure_skips_the_email_and_ends(snapshot_repo: InMemoryRepo
     assert "member portal" in again.directive.fallback_reply
 
 
-def test_d38_no_after_a_failed_send_skips(snapshot_repo: InMemoryRepository) -> None:
+def test_no_after_a_failed_send_skips(snapshot_repo: InMemoryRepository) -> None:
     eng, state = _offered(snapshot_repo)
     failed = _settle(eng, snapshot_repo, _send(eng, snapshot_repo, state), ok=False)
     decision = turn(eng, snapshot_repo, failed.state, no())
     assert decision.actions == [] and decision.state.phase is Phase.ENDED
 
 
-def test_d38_failed_send_to_alternate_address_retries_the_same_address(
+def test_failed_send_to_alternate_address_retries_the_same_address(
     snapshot_repo: InMemoryRepository,
 ) -> None:
     eng, state = _offered(snapshot_repo)

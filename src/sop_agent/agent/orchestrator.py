@@ -156,7 +156,7 @@ class Orchestrator:
     def _settle(
         self, state: SessionState, directive: TurnDirective, results: list[ActionResult]
     ) -> tuple[SessionState, TurnDirective]:
-        """Email outcomes via PolicyEngine.settle (D38); other failures get their failure template."""
+        """Email outcomes via PolicyEngine.settle; other failures get their failure template."""
         settled = self._policy.settle(state, results)
         if settled is not None:
             state, directive = settled.state, settled.directive
@@ -169,7 +169,7 @@ class Orchestrator:
         return state, directive.model_copy(update=updates)
 
     async def _ensure_draft(self, state: SessionState, writer: SummaryWriter) -> SessionState:
-        """C1: entering POST_PROCESS drafts the summary once, so the offer and C5 can use it (D52)."""
+        """C1: entering POST_PROCESS drafts the summary once, so the offer and C5 can use it."""
         if state.phase is not Phase.POST_PROCESS or state.email_draft is not None:
             return state
         pending = state.pending_question
@@ -295,7 +295,7 @@ class Orchestrator:
 
 
 def _record_questions(state: SessionState, nlu: NLUResult) -> SessionState:
-    """What was discussed (§8.4.1): the caller's questions answered after verification (D54)."""
+    """What was discussed (§8.4.1): the caller's questions answered after verification."""
     if state.memory.identity.status is not IdentityStatus.VERIFIED:
         return state
     log = state.memory.case_log

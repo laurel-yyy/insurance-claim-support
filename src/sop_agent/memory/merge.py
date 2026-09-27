@@ -212,7 +212,7 @@ def _likely_claim_path(nlu: NLUResult) -> Path | None:
 
 
 def mark_deferred_answered(state: SessionState) -> SessionState:
-    """Mark deferred questions answered once a reply that answered them was delivered (§8.2.7, D30).
+    """Mark deferred questions answered once a reply that answered them was delivered (§8.2.7).
 
     Called by the orchestrator after a successful PROCESS_CASE reply; a fallback reply doesn't answer them.
     """

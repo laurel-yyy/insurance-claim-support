@@ -87,7 +87,7 @@ class PolicyEngine:
         return self._decision(new, parts, outcome.decorations, actions, start)
 
     def settle(self, state: SessionState, results: list[ActionResult]) -> PolicyDecision | None:
-        """Finish a turn whose outcome depends on an executed action (D38). Pure, like decide().
+        """Finish a turn whose outcome depends on an executed action. Pure, like decide().
 
         Only the summary email needs this: success ends the session, a failure stays in POST_PROCESS and
         offers a retry. Returns None when nothing needs settling, so the original directive stands.

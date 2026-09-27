@@ -2,7 +2,7 @@
 
 Every field is required and there are no Optional or union types: "", 0, "none", [] and false mean "not
 mentioned". Enum strings are lowercased before validation, and unusable labels degrade per field instead of
-failing the whole extraction (DECISIONS D41). No customer data ever appears in these schemas.
+failing the whole extraction. No customer data ever appears in these schemas.
 """
 
 from enum import Enum, StrEnum
@@ -90,7 +90,7 @@ class QuestionWire(_Lenient):
     @model_validator(mode="before")
     @classmethod
     def _labels(cls, data: Any) -> Any:
-        if isinstance(data, dict):  # A missing or unknown kind is treated as account (D21)
+        if isinstance(data, dict):  # A missing or unknown kind is treated as account
             data = {**data, "kind": _scalar(data.get("kind"), QuestionKind, QuestionKind.ACCOUNT.value)}
         return data
 

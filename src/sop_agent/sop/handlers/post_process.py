@@ -134,7 +134,7 @@ def _alternate_address(state: SessionState, ctx: TurnContext, raw: str) -> Parts
 def _answer(state: SessionState, ctx: TurnContext, pending: PendingQuestion) -> StepResult:
     answer = ctx.answer(pending.kind, Phase.POST_PROCESS)
     if answer is Confirmation.YES and pending.on_yes is not None:
-        # C2: stay in POST_PROCESS until the executor reports the result; PolicyEngine.settle() finishes (D38)
+        # C2: stay in POST_PROCESS until the executor reports the result; PolicyEngine.settle() finishes
         return StepResult(parts=_sending_parts(), actions=[pending.on_yes])
     if answer is Confirmation.NO:
         if pending.kind is PendingQuestionKind.CONFIRM_ALT_EMAIL:
@@ -168,7 +168,7 @@ def _sending_parts() -> Parts:
 
 
 def settle_send(state: SessionState, ctx: TurnContext, action: PlannedAction, ok: bool) -> StepResult:
-    """After the send: success ends the session; a failure stays here and offers a retry (D38)."""
+    """After the send: success ends the session; a failure stays here and offers a retry."""
     if ok:
         return StepResult(parts=Parts(), next_phase=Phase.ENDED)
     failures = int(action.params.get("send_failures", 0)) + 1

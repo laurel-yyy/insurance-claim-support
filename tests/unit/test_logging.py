@@ -1,4 +1,4 @@
-"""The JSON log formatter redacts API keys everywhere, including tracebacks (INV-9, D64)."""
+"""The JSON log formatter redacts API keys everywhere, including tracebacks (INV-9)."""
 
 import json
 import logging

@@ -114,7 +114,7 @@ def normalize_email(raw: str) -> str | None:
 
 
 def normalize_id_last4(raw: str) -> str | None:
-    """Exactly four digits. SSN and national ID are treated the same (DECISIONS D1)."""
+    """Exactly four digits. SSN and national ID are treated the same."""
     digits = re.sub(r"\D", "", raw)
     return digits if len(digits) == ID_DIGITS else None
 

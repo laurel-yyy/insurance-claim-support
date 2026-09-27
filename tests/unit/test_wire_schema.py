@@ -143,9 +143,7 @@ def test_unknown_labels_degrade_per_field_instead_of_failing(snapshot_repo: InMe
         "unknown",
     )
     assert parsed.intents[0].path.value == "none"
-    assert (
-        parsed.questions[0].kind.value == "account"
-    )  # a missing or unknown kind is treated as account (D21)
+    assert parsed.questions[0].kind.value == "account"  # a missing or unknown kind is treated as account
 
 
 def test_missing_required_field_still_fails_validation(snapshot_repo: InMemoryRepository) -> None:

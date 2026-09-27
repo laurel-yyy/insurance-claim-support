@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     def _empty_means_unset(cls, value: object) -> object:
         """Trim whitespace, and treat an empty value as "not set": DEMO_TODAY= selects the real date (§14.1).
 
-        Trimming matters for `docker run --env-file`, which passes `KEY= value` through verbatim (D64).
+        Trimming matters for `docker run --env-file`, which passes `KEY= value` through verbatim.
         """
         if isinstance(value, str):
             value = value.strip()

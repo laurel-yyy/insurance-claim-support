@@ -48,7 +48,7 @@ def test_api_key_is_secret_and_absent_from_repr(monkeypatch: pytest.MonkeyPatch)
 
 
 def test_api_key_whitespace_is_trimmed(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`docker run --env-file` passes `ANTHROPIC_API_KEY= sk-...` through verbatim (D64)."""
+    """`docker run --env-file` passes `ANTHROPIC_API_KEY= sk-...` through verbatim."""
     _clear_env(monkeypatch)
     monkeypatch.setenv("ANTHROPIC_API_KEY", " sk-ant-test-secret \t")
     settings = Settings(_env_file=None)

@@ -2,7 +2,7 @@
 
 `NLUResult` is what memory merge and the policy consume: optional fields, where None or empty means "not
 mentioned". Identity values stay raw here; memory merge re-normalizes them (code never trusts LLM formatting).
-The LLM wire schema lives in `nlu/wire.py` and its conversion in `nlu/convert.py` (size, DECISIONS D40).
+The LLM wire schema lives in `nlu/wire.py` and its conversion in `nlu/convert.py`.
 """
 
 from enum import StrEnum
